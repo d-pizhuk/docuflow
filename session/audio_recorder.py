@@ -1,7 +1,6 @@
 import threading
 import wave
 from pathlib import Path
-from datetime import datetime
 
 import numpy as np
 import sounddevice as sd
@@ -18,10 +17,10 @@ class AudioRecorderThread(QThread):
     BLOCK_SIZE = 2048
     DTYPE = "float32"
 
-    def __init__(self, device_index: int, output_dir: Path, parent=None):
+    def __init__(self, device_index: int, output_path: Path, parent=None):
         super().__init__(parent)
         self._device_index = device_index
-        self._output_dir = output_dir
+        self._output_path = output_path
         self._frames: list[np.ndarray] = []
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
@@ -57,14 +56,13 @@ class AudioRecorderThread(QThread):
         with self._lock:
             data = np.concatenate(self._frames) if self._frames else np.array([], dtype=np.float32)
 
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out = self._output_dir / f"recording_{ts}.wav"
+        self._output_path.parent.mkdir(parents=True, exist_ok=True)
         pcm = (data * 32_767).clip(-32_768, 32_767).astype(np.int16)
 
-        with wave.open(str(out), "wb") as wf:
+        with wave.open(str(self._output_path), "wb") as wf:
             wf.setnchannels(self.CHANNELS)
             wf.setsampwidth(2)
             wf.setframerate(self.SAMPLE_RATE)
             wf.writeframes(pcm.tobytes())
 
-        self.recording_saved.emit(str(out))
+        self.recording_saved.emit(str(self._output_path))

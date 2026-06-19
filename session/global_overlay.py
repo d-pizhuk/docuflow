@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 from pathlib import Path
 
 import mss
@@ -18,7 +17,7 @@ class KeyboardSignals(QObject):
 
 
 class GlobalOverlay(QWidget):
-    screenshot_taken = Signal(str, float)
+    screenshot_taken = Signal(int, str, float)
 
     _IDLE_DIM = QColor(0, 0, 0, 30)
     _ACTIVE_DIM = QColor(0, 0, 0, 100)
@@ -27,6 +26,8 @@ class GlobalOverlay(QWidget):
         super().__init__(parent)
         self._out_dir = output_dir
         self._session_start = session_start
+        self._next_screenshot_id = 1
+        self._out_dir.mkdir(parents=True, exist_ok=True)
 
         self._origin: QPoint | None = None
         self._current: QPoint | None = None
@@ -141,9 +142,9 @@ class GlobalOverlay(QWidget):
         self.hide()
         QApplication.processEvents()
 
-        elapsed = time.time() - self._session_start
-        ts_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:20]
-        out_path = self._out_dir / f"screenshot_{ts_str}.png"
+        elapsed = time.monotonic() - self._session_start
+        screenshot_id = self._next_screenshot_id
+        out_path = self._out_dir / f"screenshot_{screenshot_id:03d}.png"
 
         dpr = QApplication.primaryScreen().devicePixelRatio()
         monitor = {
@@ -157,7 +158,8 @@ class GlobalOverlay(QWidget):
             img = sct.grab(monitor)
             mss.tools.to_png(img.rgb, img.size, output=str(out_path))
 
-        self.screenshot_taken.emit(str(out_path), elapsed)
+        self._next_screenshot_id += 1
+        self.screenshot_taken.emit(screenshot_id, str(out_path), elapsed)
         self.show()
 
     @property

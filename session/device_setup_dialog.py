@@ -9,11 +9,16 @@ from PySide6.QtWidgets import (
     QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
 )
 
+from session.language_options import (
+    DEFAULT_DOCUMENTATION_LANGUAGE,
+    DOCUMENTATION_LANGUAGES,
+)
+
 
 class DeviceSetupDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, populate_devices: bool = True):
         super().__init__(parent)
-        self.setWindowTitle("DocuFlow — Device Setup")
+        self.setWindowTitle("DocuFlow — Session Setup")
         self.setMinimumWidth(500)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
@@ -25,7 +30,8 @@ class DeviceSetupDialog(QDialog):
         self._level_timer.timeout.connect(self._refresh_level_bar)
 
         self._setup_ui()
-        self._populate_devices()
+        if populate_devices:
+            self._populate_devices()
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
@@ -37,8 +43,8 @@ class DeviceSetupDialog(QDialog):
         root.addWidget(title)
 
         info = QLabel(
-            "Select your microphone. Audio is processed entirely on your machine — "
-            "nothing is sent to the cloud during recording (NfReq8)."
+            "Select your microphone and documentation language. Audio is "
+            "processed entirely on your machine during recording."
         )
         info.setWordWrap(True)
         info.setStyleSheet("color: #555; font-size: 11px;")
@@ -54,6 +60,25 @@ class DeviceSetupDialog(QDialog):
         self._combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._combo.currentIndexChanged.connect(self._on_device_changed)
         root.addWidget(self._combo)
+
+        root.addWidget(self._bold_label("Documentation Language"))
+        self._language_combo = QComboBox()
+        self._language_combo.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        for language in DOCUMENTATION_LANGUAGES:
+            self._language_combo.addItem(language, language)
+        self._language_combo.setCurrentText(DEFAULT_DOCUMENTATION_LANGUAGE)
+        root.addWidget(self._language_combo)
+
+        language_hint = QLabel(
+            "Whisper detects the spoken language automatically. This setting "
+            "controls the generated documentation."
+        )
+        language_hint.setWordWrap(True)
+        language_hint.setStyleSheet("color: #888; font-size: 11px;")
+        root.addWidget(language_hint)
 
         root.addWidget(self._bold_label("Input Level"))
         level_row = QHBoxLayout()
@@ -205,6 +230,10 @@ class DeviceSetupDialog(QDialog):
         return {
             "device_index": getattr(self, "_sel_idx", self._devices[0][0] if self._devices else 0),
             "device_name": getattr(self, "_sel_name", "Unknown"),
+            "output_language": (
+                self._language_combo.currentData()
+                or DEFAULT_DOCUMENTATION_LANGUAGE
+            ),
         }
 
     def closeEvent(self, event):

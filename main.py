@@ -16,6 +16,7 @@ def main():
     config = setup.get_config()
 
     window = SidebarPanel(config)
+    window.session_finished.connect(app.quit)
     window.show()
 
     sys.exit(app.exec())

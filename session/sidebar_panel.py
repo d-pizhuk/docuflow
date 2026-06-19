@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve
+from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve, Signal
 from PySide6.QtGui import QFont, QPixmap, QPainter, QCloseEvent, QCursor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox, QApplication
@@ -11,7 +11,13 @@ from PySide6.QtWidgets import (
 
 from session.audio_recorder import AudioRecorderThread
 from session.global_overlay import GlobalOverlay
+from session.language_options import DEFAULT_DOCUMENTATION_LANGUAGE
 from session.mic_indicator import MicIndicatorWidget
+from session.processing_dialog import ProcessingDialog
+from session.session_manifest import SessionManifest
+
+
+RECORDINGS_DIR = Path("recordings")
 
 
 class TabWidget(QWidget):
@@ -43,6 +49,8 @@ def _emergency_kill():
 
 
 class SidebarPanel(QWidget):
+    session_finished = Signal()
+
     _EXPANDED_W = 340
     _COLLAPSED_W = 40
     _HEIGHT = 480
@@ -50,12 +58,24 @@ class SidebarPanel(QWidget):
     def __init__(self, config: dict, parent=None):
         super().__init__(parent)
         self._config = config
-        self._session_start = time.time()
+        self._session_start = time.monotonic()
         self._screenshots: list[dict] = []
+        self._session_finish_emitted = False
 
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self._session_dir = Path.home() / "DocuFlow" / "sessions" / ts
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
+        self._session_dir = RECORDINGS_DIR / f"recording_session_{ts}"
         self._session_dir.mkdir(parents=True, exist_ok=True)
+        self._audio_path = self._session_dir / "recording.wav"
+        self._manifest = SessionManifest.create(
+            self._session_dir,
+            device_name=self._config["device_name"],
+            sample_rate=AudioRecorderThread.SAMPLE_RATE,
+            channels=AudioRecorderThread.CHANNELS,
+            output_language=self._config.get(
+                "output_language",
+                DEFAULT_DOCUMENTATION_LANGUAGE,
+            ),
+        )
 
         self._is_expanded = False
         self._current_screen = QApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
@@ -76,7 +96,10 @@ class SidebarPanel(QWidget):
         self._tracker.timeout.connect(self._track_mouse_and_monitor)
         self._tracker.start(100)
 
-        self._overlay = GlobalOverlay(self._session_dir, self._session_start)
+        self._overlay = GlobalOverlay(
+            self._session_dir / "screenshots",
+            self._session_start,
+        )
         self._overlay.screenshot_taken.connect(self._on_screenshot_done)
         self._overlay.signals.kill_app.connect(_emergency_kill)
         self._overlay.show()
@@ -122,9 +145,9 @@ class SidebarPanel(QWidget):
 
         mp_layout.addStretch()
 
-        stop_btn = QPushButton("■   Stop Session")
-        stop_btn.setFixedHeight(46)
-        stop_btn.setStyleSheet("""
+        self._stop_btn = QPushButton("■   Stop Session")
+        self._stop_btn.setFixedHeight(46)
+        self._stop_btn.setStyleSheet("""
             QPushButton { 
                 background: #922b21; 
                 color: white; 
@@ -139,8 +162,8 @@ class SidebarPanel(QWidget):
                 background: #641e16; 
             }
         """)
-        stop_btn.clicked.connect(self._on_stop)
-        mp_layout.addWidget(stop_btn)
+        self._stop_btn.clicked.connect(self._on_stop)
+        mp_layout.addWidget(self._stop_btn)
 
         self._anim = QPropertyAnimation(self, b"geometry")
         self._anim.setDuration(250)
@@ -177,7 +200,7 @@ class SidebarPanel(QWidget):
             self.setGeometry(target_x, y, self._EXPANDED_W, self._HEIGHT)
 
     def _update_clock(self):
-        elapsed = int(time.time() - self._session_start)
+        elapsed = int(time.monotonic() - self._session_start)
         h, r = divmod(elapsed, 3600)
         m, s = divmod(r, 60)
         t_str = f"{h:02d}:{m:02d}:{s:02d}"
@@ -186,13 +209,20 @@ class SidebarPanel(QWidget):
         self._tab.set_time(t_str)
 
     def _start_audio(self):
-        self._recorder = AudioRecorderThread(self._config["device_index"], self._session_dir)
+        self._recorder = AudioRecorderThread(
+            self._config["device_index"],
+            self._audio_path,
+        )
         self._recorder.audio_level.connect(self._mic_widget.set_level)
         self._recorder.recording_saved.connect(self._on_recording_saved)
+        self._recorder.error_occurred.connect(self._on_recording_error)
         self._recorder.start()
 
-    def _on_screenshot_done(self, path: str, elapsed: float):
-        self._screenshots.append({"path": path, "elapsed": elapsed})
+    def _on_screenshot_done(self, screenshot_id: int, path: str, elapsed: float):
+        self._manifest.add_screenshot(screenshot_id, Path(path), elapsed)
+        self._screenshots.append(
+            {"id": screenshot_id, "path": path, "elapsed_seconds": elapsed}
+        )
 
         pix = QPixmap(path)
         if not pix.isNull():
@@ -203,6 +233,8 @@ class SidebarPanel(QWidget):
             self._thumb.setPixmap(scaled)
 
     def _on_stop(self):
+        self._stop_btn.setEnabled(False)
+        self._stop_btn.setText("Saving session…")
         self._tick.stop()
         self._tracker.stop()
         self._overlay.stop_listener()
@@ -211,11 +243,46 @@ class SidebarPanel(QWidget):
         self._recorder.stop_recording()
 
     def _on_recording_saved(self, wav_path: str):
-        QMessageBox.information(
-            self, "Session Complete",
-            f"Audio saved to:\n{wav_path}\n\n{len(self._screenshots)} screenshot(s) saved."
+        self._manifest.complete(
+            Path(wav_path),
+            time.monotonic() - self._session_start,
         )
+        choice = QMessageBox(self)
+        choice.setWindowTitle("Recording Complete")
+        choice.setIcon(QMessageBox.Icon.Information)
+        choice.setText("The recording session was saved successfully.")
+        choice.setInformativeText(
+            f"{len(self._screenshots)} screenshot(s) saved.\n"
+            f"Documentation language: "
+            f"{self._config.get('output_language', DEFAULT_DOCUMENTATION_LANGUAGE)}\n\n"
+            "Would you like to process the recording now?"
+        )
+        process_button = choice.addButton(
+            "Process Recording",
+            QMessageBox.ButtonRole.AcceptRole,
+        )
+        choice.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        choice.setDefaultButton(process_button)
+        choice.exec()
+
+        if choice.clickedButton() is process_button:
+            self.hide()
+            processing_dialog = ProcessingDialog(self._session_dir, self)
+            processing_dialog.exec()
+
+        self._finish_session()
+
+    def _on_recording_error(self, message: str):
+        self._manifest.fail(message)
+        QMessageBox.critical(self, "Recording Error", message)
+        self._finish_session()
+
+    def _finish_session(self):
+        if self._session_finish_emitted:
+            return
+        self._session_finish_emitted = True
         self.close()
+        self.session_finished.emit()
 
     def closeEvent(self, event: QCloseEvent):
         if hasattr(self, '_overlay') and self._overlay:
@@ -223,4 +290,13 @@ class SidebarPanel(QWidget):
         if hasattr(self, '_recorder') and self._recorder.isRunning():
             self._recorder.stop_recording()
             self._recorder.wait(4000)
+        if (
+            hasattr(self, "_manifest")
+            and self._manifest.status == "recording"
+            and self._audio_path.exists()
+        ):
+            self._manifest.complete(
+                self._audio_path,
+                time.monotonic() - self._session_start,
+            )
         super().closeEvent(event)
