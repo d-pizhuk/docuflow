@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -12,10 +13,15 @@ from PySide6.QtWidgets import (
 
 from ai.transcriber import Transcriber, TranscribedChunk
 from ai.transcript_assembler import TranscriptAssembler, AnnotatedStep
+from ai.step_structurer import StepStructurer, DEFAULT_MODEL
+from ai.screenshot_describer import ScreenshotDescriber, DEFAULT_VLM_MODEL
+from ai.doc_merger import DocMerger, MergedDoc
+from ai.api_gateway import ApiGateway, ApiGatewayError
 from session.audio_recorder import AudioRecorderThread
 from session.global_overlay import GlobalOverlay
 from session.mic_indicator import MicIndicatorWidget
 from session.screenshot_capture import CapturedScreenshot
+from session.review_edit import ReviewEditWindow
 
 
 class TabWidget(QWidget):
@@ -45,43 +51,68 @@ def _emergency_kill():
     os._exit(1)
 
 
-class TranscriptPreviewDialog(QDialog):
-    """Read-only transcript preview shown after a session ends."""
+class TranscriptApprovalDialog(QDialog):
+    """Shown right after transcription finishes. The user reviews (and may edit)
+    the transcript, then presses 'Generate Documentation' to send it to the LLM,
+    or cancels. This is the human-in-the-loop approval / consent gate."""
 
-    def __init__(self, steps: list[AnnotatedStep], full_text: str, parent=None):
+    def __init__(self, steps: list[AnnotatedStep], annotated: str, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Session Transcript")
-        self.resize(700, 500)
+        self.setWindowTitle("Review Transcript")
+        self.resize(700, 520)
 
         layout = QVBoxLayout(self)
 
-        info = QLabel(f"{len(steps)} annotated step(s) · scroll to review")
+        info = QLabel(
+            f"{len(steps)} segment(s) transcribed. Review the text below and fix any "
+            "mistakes, then generate the documentation. The [SCREENSHOT: …] markers "
+            "show where each screenshot will be placed — keep them as they are."
+        )
+        info.setWordWrap(True)
         info.setStyleSheet("color: #888; font-size: 11px;")
         layout.addWidget(info)
 
         self._editor = QPlainTextEdit()
-        self._editor.setReadOnly(True)
         self._editor.setFont(QFont("Consolas", 10))
-        self._editor.setPlainText(self._format(steps, full_text))
+        self._editor.setPlainText(annotated)
         layout.addWidget(self._editor)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        buttons = QDialogButtonBox()
+        buttons.addButton("Generate Documentation →", QDialogButtonBox.ButtonRole.AcceptRole)
+        buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
         buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-    @staticmethod
-    def _format(steps: list[AnnotatedStep], full_text: str) -> str:
-        if not steps:
-            return f"[No steps assembled]\n\nFull transcript:\n{full_text}"
+    def edited_transcript(self) -> str:
+        return self._editor.toPlainText().strip()
 
-        lines = []
-        for i, step in enumerate(steps, 1):
-            ts = f"{step.start_sec:.1f}s – {step.end_sec:.1f}s"
-            ss = f"  📷 {step.screenshot.path.name}" if step.screenshot else ""
-            lines.append(f"── Step {i}  [{ts}]{ss}")
-            lines.append(step.text)
-            lines.append("")
-        return "\n".join(lines)
+
+class GeneratingDialog(QDialog):
+    """Modal 'please wait' shown while the LLM + VLM build the documentation.
+    Dismissed programmatically once results arrive."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Working…")
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        # No close button — this is dismissed by the panel when results arrive.
+        self.setWindowFlags(
+            Qt.WindowType.Dialog
+            | Qt.WindowType.CustomizeWindowHint
+            | Qt.WindowType.WindowTitleHint
+        )
+        self.resize(380, 120)
+
+        layout = QVBoxLayout(self)
+        lbl = QLabel(
+            "Generating documentation…\n"
+            "Structuring the transcript and describing screenshots.\n"
+            "This can take up to ~90 seconds."
+        )
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setWordWrap(True)
+        layout.addWidget(lbl)
 
 
 class SidebarPanel(QWidget):
@@ -103,6 +134,7 @@ class SidebarPanel(QWidget):
         self._current_screen = QApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
         self._stopping = False
         self._t_stop = 0.0
+        self._progress_dlg: GeneratingDialog | None = None
 
         # AI pipeline
         self._assembler = TranscriptAssembler(self._session_start_utc)
@@ -113,6 +145,16 @@ class SidebarPanel(QWidget):
             self._transcriber = transcriber
         else:
             self._transcriber = Transcriber(on_chunk_transcribed=self._on_chunk_transcribed)
+
+        # One gateway shared by the LLM structurer (Req6) and the VLM describer (Req7).
+        self._gateway = ApiGateway()
+        self._structurer = StepStructurer(
+            gateway=self._gateway, model=config.get("llm_model") or DEFAULT_MODEL
+        )
+        self._describer = ScreenshotDescriber(
+            gateway=self._gateway, model=config.get("vlm_model") or DEFAULT_VLM_MODEL
+        )
+        self._merger = DocMerger()
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -297,7 +339,7 @@ class SidebarPanel(QWidget):
         QApplication.instance().postEvent(self, _TranscriptUpdateEvent(preview))
 
     # ------------------------------------------------------------------ #
-    # Stop flow
+    # Stop flow — Step 1: finish transcription, then ask for approval
     # ------------------------------------------------------------------ #
 
     def _on_stop(self):
@@ -324,28 +366,115 @@ class SidebarPanel(QWidget):
 
         assembler = self._assembler
         transcriber = self._transcriber
+        panel = self
 
         class _Finaliser(QRunnable):
-            def __init__(self, panel):
-                super().__init__()
-                self._panel = panel
-
             def run(self):
                 transcriber.finish()
                 steps = assembler.assemble()
                 full_text = assembler.full_transcript()
-                elapsed = time.monotonic() - self._panel._t_stop
+                annotated = assembler.annotated_transcript()
+                session_dir = panel._session_dir
+
+                # Always persist the transcript so it survives even if the user
+                # cancels or the LLM later fails (fallback / Safety requirement).
+                try:
+                    (session_dir / "transcript.txt").write_text(annotated, encoding="utf-8")
+                except Exception:
+                    pass
+
+                elapsed = time.monotonic() - panel._t_stop
                 print(
                     f"[session] transcript ready {elapsed:.1f}s after recording stopped "
-                    f"({len(steps)} step(s))",
+                    f"({len(steps)} step(s)) — awaiting user approval",
                     flush=True,
                 )
-                # Post result back to main thread
+                # Hand back to the main thread to show the approval dialog.
                 QApplication.instance().postEvent(
-                    self._panel, _SessionDoneEvent(steps, full_text, wav_path, elapsed)
+                    panel, _TranscriptReadyEvent(steps, full_text, annotated, elapsed)
                 )
 
-        QThreadPool.globalInstance().start(_Finaliser(self))
+        QThreadPool.globalInstance().start(_Finaliser())
+
+    # ------------------------------------------------------------------ #
+    # Stop flow — Step 2: user reviews & approves the transcript
+    # ------------------------------------------------------------------ #
+
+    def _review_transcript(self, steps: list[AnnotatedStep], full_text: str,
+                           annotated: str, elapsed: float):
+        self._status_lbl.setText(f"Transcript ready ({elapsed:.1f}s) · review & approve")
+
+        dlg = TranscriptApprovalDialog(steps, annotated, self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            approved = dlg.edited_transcript()
+            self._start_generation(approved, steps, full_text)
+        else:
+            # User cancelled — transcript is already saved on disk.
+            self._status_lbl.setText("Cancelled · transcript saved to session folder")
+            self.close()
+
+    # ------------------------------------------------------------------ #
+    # Stop flow — Step 3: structure (Req6) → describe screenshots (Req7) → merge (Req8)
+    # ------------------------------------------------------------------ #
+
+    def _start_generation(self, annotated: str, steps: list[AnnotatedStep], full_text: str):
+        from PySide6.QtCore import QThreadPool, QRunnable
+
+        self._status_lbl.setText("Generating documentation…")
+        self._progress_dlg = GeneratingDialog(self)
+        self._progress_dlg.show()
+
+        structurer = self._structurer
+        describer = self._describer
+        merger = self._merger
+        screenshot_names = self._assembler.screenshot_names()
+        session_dir = self._session_dir
+        panel = self
+        t0 = time.monotonic()
+
+        class _GenerateRunnable(QRunnable):
+            def run(self):
+                merged = None
+                error = None
+                try:
+                    # Req6: structure the approved transcript into JSON steps.
+                    doc = structurer.structure(
+                        annotated,
+                        valid_screenshots=screenshot_names,
+                        session_dir=session_dir,
+                    )
+                    (session_dir / "steps.json").write_text(
+                        json.dumps(doc.to_json(), indent=2), encoding="utf-8"
+                    )
+
+                    # Req7: describe each screenshot with the VLM (parallel, and
+                    # any single image failing is skipped, not fatal).
+                    descriptions = describer.describe_all(doc, session_dir)
+
+                    # Req8: deterministic merge into the final documentation.
+                    merged = merger.merge(doc, descriptions)
+                    (session_dir / "documentation.json").write_text(
+                        json.dumps(merged.to_json(), indent=2), encoding="utf-8"
+                    )
+                except ApiGatewayError as exc:
+                    error = str(exc)
+                    print(
+                        f"[session] generation failed: {exc} "
+                        f"(transcript saved for manual completion)",
+                        flush=True,
+                    )
+
+                elapsed = time.monotonic() - t0
+                print(
+                    f"[session] documentation ready {elapsed:.1f}s after approval "
+                    f"({len(merged.steps) if merged else 0} step(s))",
+                    flush=True,
+                )
+                QApplication.instance().postEvent(
+                    panel, _SessionDoneEvent(steps, full_text, annotated, merged, error, elapsed)
+                )
+
+        QThreadPool.globalInstance().start(_GenerateRunnable())
 
     # ------------------------------------------------------------------ #
     # Custom Qt events (cross-thread UI updates)
@@ -355,15 +484,29 @@ class SidebarPanel(QWidget):
         if isinstance(ev, _TranscriptUpdateEvent):
             self._transcript_lbl.setText(ev.text)
             return True
+        if isinstance(ev, _TranscriptReadyEvent):
+            self._review_transcript(ev.steps, ev.full_text, ev.annotated, ev.elapsed)
+            return True
         if isinstance(ev, _SessionDoneEvent):
-            self._show_results(ev.steps, ev.full_text, ev.wav_path, ev.elapsed)
+            self._show_results(ev.annotated, ev.merged, ev.error, ev.elapsed)
             return True
         return super().event(ev)
 
-    def _show_results(self, steps: list[AnnotatedStep], full_text: str, wav_path: str, elapsed: float = 0.0):
-        self._status_lbl.setText(f"Done · {len(steps)} step(s) · ready {elapsed:.1f}s after stop")
-        dlg = TranscriptPreviewDialog(steps, full_text, self)
-        dlg.exec()
+    def _show_results(self, annotated: str, merged: MergedDoc | None = None,
+                      error: str | None = None, elapsed: float = 0.0):
+        if self._progress_dlg is not None:
+            self._progress_dlg.close()
+            self._progress_dlg = None
+
+        if error:
+            self._status_lbl.setText(f"Generation failed ({error}) · transcript saved")
+        else:
+            n = len(merged.steps) if merged else 0
+            self._status_lbl.setText(f"Done · {n} step(s) · {elapsed:.1f}s")
+
+        # Req9 + Req10: open the editable preview / export window.
+        win = ReviewEditWindow(merged, annotated, self._session_dir, error=error, parent=self)
+        win.exec()
         self.close()
 
     # ------------------------------------------------------------------ #
@@ -393,12 +536,30 @@ class _TranscriptUpdateEvent(QEvent):
         self.text = text
 
 
-class _SessionDoneEvent(QEvent):
+class _TranscriptReadyEvent(QEvent):
+    """Posted when transcription finishes; triggers the approval dialog."""
     _TYPE = QEvent.Type(QEvent.registerEventType())
 
-    def __init__(self, steps: list[AnnotatedStep], full_text: str, wav_path: str, elapsed: float = 0.0):
+    def __init__(self, steps: list[AnnotatedStep], full_text: str,
+                 annotated: str, elapsed: float = 0.0):
         super().__init__(self._TYPE)
         self.steps = steps
         self.full_text = full_text
-        self.wav_path = wav_path
+        self.annotated = annotated
+        self.elapsed = elapsed
+
+
+class _SessionDoneEvent(QEvent):
+    """Posted when the LLM + VLM have produced the merged documentation."""
+    _TYPE = QEvent.Type(QEvent.registerEventType())
+
+    def __init__(self, steps: list[AnnotatedStep], full_text: str, annotated: str,
+                 merged: MergedDoc | None = None, error: str | None = None,
+                 elapsed: float = 0.0):
+        super().__init__(self._TYPE)
+        self.steps = steps
+        self.full_text = full_text
+        self.annotated = annotated
+        self.merged = merged    # MergedDoc | None
+        self.error = error      # str | None
         self.elapsed = elapsed

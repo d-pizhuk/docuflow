@@ -31,10 +31,12 @@ CPU_THREADS = max(1, (os.cpu_count() or 4) // NUM_WORKERS)
 
 _REQUIRED_FILES = {"model.bin", "config.json", "tokenizer.json"}
 
-# Word-timestamp alignment (needed for screenshot placement) is only worth its
-# cost on chunks long enough to contain a screenshot trigger. Short tail chunks
-# are transcribed with word_timestamps=False to keep the post-Stop path fast;
-# their coarse start_offset still aligns any screenshot within a few seconds.
+# Word-timestamp alignment (needed for fine screenshot placement) is only worth
+# its cost on chunks long enough to likely contain a screenshot trigger. Short
+# chunks are transcribed with word_timestamps=False to keep the post-Stop path
+# fast; the assembler falls back to spreading their text across the chunk's own
+# [start_offset, start_offset + duration] span, so no text is ever lost and
+# screenshots still align within the chunk.
 _WORD_TIMESTAMP_MIN_SECONDS = 10.0
 
 
@@ -44,6 +46,9 @@ class TranscribedChunk:
     text: str
     words: list[tuple[float, float, str]] = field(default_factory=list)
     start_offset: float = 0.0
+    # Chunk length in seconds. Lets the assembler position a chunk's text on the
+    # timeline even when word_timestamps were skipped (words == []).
+    duration: float = 0.0
 
 
 @dataclass
@@ -54,7 +59,7 @@ class _Job:
 
 class Transcriber:
     """
-    Loads faster-whisper from models/whisper-large-v3-turbo/ and transcribes
+    Loads faster-whisper from models/whisper-distil-large-v3/ and transcribes
     WAV chunks as they arrive via submit().
 
     A single shared model is served by NUM_WORKERS worker threads, so chunks may
@@ -184,10 +189,9 @@ class Transcriber:
         # Whisper's internal Silero VAD off — it's a fixed per-chunk CPU cost we
         # don't need on the (post-Stop) critical path.
         #
-        # Word timestamps are needed only for screenshot alignment. Short tail
-        # chunks are transcribed without the alignment pass; their start_offset
-        # still aligns any screenshot within a few seconds, which is fine for a
-        # tail that rarely contains a screenshot trigger.
+        # Word timestamps are needed only for fine screenshot alignment. Short
+        # chunks are transcribed without the alignment pass; the assembler still
+        # positions their text using start_offset + duration, so nothing is lost.
         duration = self._wav_duration(path)
         word_timestamps = duration >= _WORD_TIMESTAMP_MIN_SECONDS
 
@@ -212,6 +216,7 @@ class Transcriber:
             text=" ".join(text_parts),
             words=words,
             start_offset=start_offset,
+            duration=duration,
         )
 
     @staticmethod

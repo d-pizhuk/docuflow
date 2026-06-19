@@ -1,8 +1,6 @@
 from pathlib import Path
 from huggingface_hub import snapshot_download
 
-# MODEL_REPO = "deepdml/faster-whisper-large-v3-turbo-ct2"
-# MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "whisper-large-v3-turbo"
 MODEL_REPO = "Systran/faster-distil-whisper-large-v3"
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "whisper-distil-large-v3"
 

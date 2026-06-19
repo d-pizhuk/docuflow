@@ -5,3 +5,5 @@ mss==10.1.0
 pynput==1.8.1
 faster-whisper==1.1.0
 requests==2.34.2
+openai>=1.40
+Pillow>=10.0
