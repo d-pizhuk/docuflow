@@ -1,3 +1,4 @@
+# session/device_setup_dialog.py
 import threading
 
 import numpy as np
@@ -9,8 +10,7 @@ from PySide6.QtWidgets import (
     QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
 )
 
-from ai.languages import DOCUMENTATION_LANGUAGES, DEFAULT_DOCUMENTATION_LANGUAGE, WHISPER_LANGUAGE_CODES
-
+from ai.languages import DOCUMENTATION_LANGUAGES, WHISPER_LANGUAGE_CODES
 
 class _ModelReadyEvent(QEvent):
     _TYPE = QEvent.Type(QEvent.registerEventType())
@@ -20,13 +20,12 @@ class _ModelReadyEvent(QEvent):
         self.success = success
         self.error = error
 
-
 class DeviceSetupDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, settings, parent=None):
         super().__init__(parent)
+        self._settings = settings
         self.setWindowTitle("DocuFlow — Device Setup")
         self.setMinimumWidth(520)
-        # Make it a standard window so it can be minimized and closed properly
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
 
@@ -42,10 +41,6 @@ class DeviceSetupDialog(QDialog):
         self._setup_ui()
         self._populate_devices()
         self._begin_model_load()
-
-    # ------------------------------------------------------------------ #
-    # UI
-    # ------------------------------------------------------------------ #
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
@@ -97,7 +92,7 @@ class DeviceSetupDialog(QDialog):
         root.addWidget(_bold_label("Speech Recognition Model"))
 
         self._model_bar = QProgressBar()
-        self._model_bar.setRange(0, 0)  # pulsing / indeterminate
+        self._model_bar.setRange(0, 0)
         self._model_bar.setTextVisible(False)
         self._model_bar.setFixedHeight(18)
         self._model_bar.setStyleSheet(_MODEL_BAR_STYLE)
@@ -112,7 +107,7 @@ class DeviceSetupDialog(QDialog):
 
         self._lang_combo = QComboBox()
         self._lang_combo.addItems(DOCUMENTATION_LANGUAGES)
-        self._lang_combo.setCurrentText(DEFAULT_DOCUMENTATION_LANGUAGE)
+        self._lang_combo.setCurrentText(self._settings.documentation_language)
         self._lang_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         root.addWidget(self._lang_combo)
 
@@ -134,17 +129,14 @@ class DeviceSetupDialog(QDialog):
         btn_row.addWidget(self._start_btn)
         root.addLayout(btn_row)
 
-    # ------------------------------------------------------------------ #
-    # Model load
-    # ------------------------------------------------------------------ #
-
     def _begin_model_load(self):
         dialog = self
 
         def _load():
             try:
                 from ai.transcriber import Transcriber
-                t = Transcriber(on_chunk_transcribed=lambda _: None)
+                whisper_lang = WHISPER_LANGUAGE_CODES.get(dialog._settings.documentation_language, "en")
+                t = Transcriber(on_chunk_transcribed=lambda _: None, language=whisper_lang)
                 t.wait_until_ready()
                 if t._model is not None:
                     dialog._transcriber = t
@@ -183,10 +175,6 @@ class DeviceSetupDialog(QDialog):
     def _update_start_btn(self):
         has_mic = bool(self._devices) and self._combo.currentIndex() >= 0
         self._start_btn.setEnabled(self._model_loaded and has_mic)
-
-    # ------------------------------------------------------------------ #
-    # Mic / device
-    # ------------------------------------------------------------------ #
 
     def _populate_devices(self):
         try:
@@ -276,6 +264,9 @@ class DeviceSetupDialog(QDialog):
             sel_lang = self._lang_combo.currentText()
             self._transcriber.language = WHISPER_LANGUAGE_CODES.get(sel_lang, "en")
 
+        self._settings.documentation_language = self._lang_combo.currentText()
+        self._settings.save()
+
         self.accept()
 
     def get_config(self) -> dict:
@@ -283,17 +274,11 @@ class DeviceSetupDialog(QDialog):
             "device_index": getattr(self, "_sel_idx", self._devices[0][0] if self._devices else 0),
             "device_name": getattr(self, "_sel_name", "Unknown"),
             "transcriber": self._transcriber,
-            "documentation_language": self._lang_combo.currentText(),
         }
 
     def closeEvent(self, event):
         self._stop_test()
         super().closeEvent(event)
-
-
-# ------------------------------------------------------------------ #
-# Helpers
-# ------------------------------------------------------------------ #
 
 def _hsep() -> QFrame:
     sep = QFrame()
@@ -301,17 +286,13 @@ def _hsep() -> QFrame:
     sep.setFrameShadow(QFrame.Shadow.Sunken)
     return sep
 
-
 def _bold_label(text: str) -> QLabel:
     lbl = QLabel(text)
     lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
     return lbl
 
-
 _MIC_BAR_STYLE = """
-    QProgressBar {
-        border: 1px solid #ccc; border-radius: 6px; background: #f0f0f0;
-    }
+    QProgressBar { border: 1px solid #ccc; border-radius: 6px; background: #f0f0f0; }
     QProgressBar::chunk {
         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
             stop:0 #2ecc71, stop:0.7 #f39c12, stop:1 #e74c3c);
@@ -320,20 +301,12 @@ _MIC_BAR_STYLE = """
 """
 
 _MODEL_BAR_STYLE = """
-    QProgressBar {
-        border: 1px solid #ccc; border-radius: 6px;
-        background: #f0f0f0; text-align: center; font-size: 10px;
-    }
-    QProgressBar::chunk {
-        background: #3498db; border-radius: 5px;
-    }
+    QProgressBar { border: 1px solid #ccc; border-radius: 6px; background: #f0f0f0; text-align: center; font-size: 10px; }
+    QProgressBar::chunk { background: #3498db; border-radius: 5px; }
 """
 
 _START_BTN_STYLE = """
-    QPushButton {
-        background: #2c3e50; color: white;
-        border-radius: 5px; padding: 6px 12px; font-weight: bold;
-    }
+    QPushButton { background: #2c3e50; color: white; border-radius: 5px; padding: 6px 12px; font-weight: bold; }
     QPushButton:enabled:hover  { background: #1a252f; }
     QPushButton:disabled       { background: #95a5a6; color: #ddd; }
 """

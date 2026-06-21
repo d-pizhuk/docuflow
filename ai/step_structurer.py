@@ -1,3 +1,4 @@
+# ai/step_structurer.py
 import json
 import logging
 from dataclasses import dataclass, field
@@ -5,11 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ai.api_gateway import ApiGateway, ApiGatewayError
-from ai.languages import DEFAULT_DOCUMENTATION_LANGUAGE
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_MODEL = "casperhansen/llama-3.3-70b-instruct-awq"
 
 TEMPERATURE = 0.1
 MAX_JSON_REPAIR_ATTEMPTS = 2
@@ -88,9 +86,8 @@ OPENAI_TOOLS = [
 
 
 class StepStructurer:
-    def __init__(self, gateway: ApiGateway | None = None, model: str = DEFAULT_MODEL,
-                 language: str = DEFAULT_DOCUMENTATION_LANGUAGE):
-        self._gateway = gateway or ApiGateway()
+    def __init__(self, gateway: ApiGateway, model: str, language: str):
+        self._gateway = gateway
         self._model = model
         self._language = language
 

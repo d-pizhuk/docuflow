@@ -8,6 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from settings import Settings
 from ai.step_structurer import StepStructurer
 from ai.api_gateway import ApiGateway, ApiGatewayError
 
@@ -88,7 +89,6 @@ def main():
         print(f"No sample_XXX directories found in {SAMPLES_DIR}")
         sys.exit(1)
 
-    # --- Sample selection ---
     if args.sample:
         matched = [d for d in all_samples if d.name == args.sample]
         if not matched:
@@ -99,14 +99,12 @@ def main():
     elif args.all:
         samples = all_samples
     else:
-        # Default: process all, but remind the user about the flags
         print(
             "Tip: use --sample <id> to process a single sample, "
             "or --all to suppress this message.\n"
         )
         samples = all_samples
 
-    # --- Skip already-generated samples unless --force ---
     if not args.force:
         pending = [d for d in samples if not (d / "steps_generated.json").exists()]
         skipped = len(samples) - len(pending)
@@ -119,8 +117,11 @@ def main():
         print("Nothing to do.")
         sys.exit(0)
 
-    print(f"Initializing LLM Step Structurer...")
-    structurer = StepStructurer(gateway=ApiGateway())
+    print(f"Initializing LLM Step Structurer from settings...")
+    settings = Settings.load()
+    gateway = ApiGateway(base_url=settings.api_base_url, api_key=settings.api_key)
+    structurer = StepStructurer(gateway=gateway, model=settings.llm_model, language=settings.documentation_language)
+
     print(f"Processing {len(samples)} sample(s)...\n")
 
     for sample_dir in samples:

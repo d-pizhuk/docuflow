@@ -1,3 +1,4 @@
+# ai/transcriber.py
 import logging
 import os
 import queue
@@ -17,25 +18,21 @@ _MODELS_ROOT = Path(__file__).resolve().parent.parent / "models"
 
 
 def _resolve_model_dir() -> Path:
-    """Prefer the correctly named turbo dir; fall back to the legacy folder name
-    (which already contained the turbo model) so existing installs keep working."""
     turbo = _MODELS_ROOT / "whisper-large-v3-turbo"
     legacy = _MODELS_ROOT / "whisper-distil-large-v3"
     if turbo.exists():
         return turbo
     if legacy.exists():
         return legacy
-    return turbo  # default; validation below will prompt a download
+    return turbo
 
 
 MODEL_DIR = _resolve_model_dir()
 DEVICE = "cpu"
-COMPUTE_TYPE = "int8"  # fastest CPU path; negligible accuracy loss vs float
+COMPUTE_TYPE = "int8"
 
 
 def _physical_cores() -> int:
-    """CTranslate2 is fastest with intra-op threads == PHYSICAL cores. Using the
-    logical (hyper-threaded) count oversubscribes the ALU/FPU and slows it down."""
     try:
         import psutil
         n = psutil.cpu_count(logical=False)
@@ -43,26 +40,15 @@ def _physical_cores() -> int:
             return int(n)
     except Exception:
         pass
-    # Fallback heuristic: assume 2-way SMT when we can't query physical cores.
     logical = os.cpu_count() or 4
     return max(1, logical // 2) if logical >= 4 else max(1, logical)
 
 
-# THE key fix: ONE transcription at a time, using ALL physical cores. The old
-# config (2 workers, each given every core) ran two transcriptions that fought
-# over the same cores — roughly halving throughput whenever they overlapped, so
-# live transcription fell behind and a backlog drained at Stop. A single worker
-# at full width transcribes the (small) post-Stop tail as fast as the machine
-# physically can, with zero oversubscription.
-NUM_WORKERS = 2
+NUM_WORKERS = 1
 CPU_THREADS = _physical_cores()
 
 _REQUIRED_FILES = {"model.bin", "config.json", "tokenizer.json"}
 
-# Word-level alignment gives finer screenshot placement but costs extra decode.
-# Off by default for maximum post-Stop speed — the assembler still positions each
-# chunk's text by its start_offset+duration (≈chunk-level resolution). Set this
-# True (it then kicks in for chunks ≥ 4 s) if you want tighter screenshot anchoring.
 ENABLE_WORD_TIMESTAMPS = False
 _WORD_TIMESTAMP_MIN_SECONDS = 4.0
 
@@ -73,8 +59,6 @@ class TranscribedChunk:
     text: str
     words: list[tuple[float, float, str]] = field(default_factory=list)
     start_offset: float = 0.0
-    # Chunk length in seconds. Lets the assembler position a chunk's text on the
-    # timeline even when word_timestamps were skipped (words == []).
     duration: float = 0.0
 
 
@@ -85,26 +69,15 @@ class _Job:
 
 
 class Transcriber:
-    """
-    Loads faster-whisper (large-v3-turbo, int8) and transcribes WAV chunks as they
-    arrive via submit(). A single worker uses all physical cores, so live
-    transcription stays ahead of recording and the only post-Stop work is the
-    short final tail chunk.
-
-    Run scripts/download_model.py once after cloning to populate the model dir.
-    """
-
-    _SAMPLE_RATE = 16_000
-
-    def __init__(self, on_chunk_transcribed: Callable[[TranscribedChunk], None], language: str = "en"):
+    def __init__(self, on_chunk_transcribed: Callable[[TranscribedChunk], None], language: str):
         self._validate_model_dir()
         self._on_result = on_chunk_transcribed
         self._queue: queue.Queue[_Job | None] = queue.Queue()
         self._model: WhisperModel | None = None
         self._model_ready = threading.Event()
         self._workers: list[threading.Thread] = []
-        self.language = language  # ISO 639-1 language code (e.g. "en", "de")
-        # One boot thread loads the model, warms it up, then spawns the worker(s).
+        self.language = language
+
         self._boot = threading.Thread(target=self._boot_and_serve, daemon=True, name="transcriber-boot")
         self._boot.start()
 
@@ -135,15 +108,10 @@ class Transcriber:
         )
 
     def finish(self):
-        """Signal all workers to stop and block until the queue is drained."""
         for _ in self._workers:
-            self._queue.put(None)  # one sentinel per worker
+            self._queue.put(None)
         for w in self._workers:
             w.join()
-
-    # ------------------------------------------------------------------ #
-    # Boot + worker pool
-    # ------------------------------------------------------------------ #
 
     def _boot_and_serve(self):
         try:
@@ -159,9 +127,6 @@ class Transcriber:
                 MODEL_DIR, NUM_WORKERS, CPU_THREADS,
             )
             print(f"[whisper] model loaded (cpu_threads={CPU_THREADS}, workers={NUM_WORKERS})", flush=True)
-            # Warm up so the first real chunk runs at full speed (graph build,
-            # thread-pool spin-up and oneDNN kernel selection happen here, not
-            # on the user's critical path).
             self._warmup()
         except Exception:
             logger.exception("Failed to load Whisper model")
@@ -181,12 +146,12 @@ class Transcriber:
     def _warmup(self):
         try:
             t0 = time.monotonic()
-            silent = np.zeros(self._SAMPLE_RATE, dtype=np.float32)  # 1 s of silence
+            silent = np.zeros(16_000, dtype=np.float32)
             segments, _ = self._model.transcribe(
                 silent, language=self.language, beam_size=1, temperature=0.0,
                 vad_filter=False, without_timestamps=True,
             )
-            for _ in segments:  # transcribe() is lazy — force it to actually run
+            for _ in segments:
                 pass
             print(f"[whisper] warmup complete in {time.monotonic() - t0:.1f}s", flush=True)
         except Exception:
@@ -225,28 +190,22 @@ class Transcriber:
             finally:
                 self._queue.task_done()
 
-    # ------------------------------------------------------------------ #
-    # Inference (stateless: start_offset comes from the caller)
-    # ------------------------------------------------------------------ #
-
     def _transcribe(self, path: Path, start_offset: float) -> TranscribedChunk:
         duration = self._wav_duration(path)
         word_timestamps = ENABLE_WORD_TIMESTAMPS and duration >= _WORD_TIMESTAMP_MIN_SECONDS
 
-        # Read the WAV straight into a float32 array and hand it to the model,
-        # bypassing faster-whisper's internal file decode.
         audio_array = self._read_wav_to_array(path)
 
         segments, _ = self._model.transcribe(
             audio_array,
-            language=self.language,  # skip language detection
+            language=self.language,
             task="transcribe",
-            beam_size=1,  # greedy — big CPU win, negligible loss
-            temperature=0.0,  # disable multi-temperature fallback re-decoding
-            condition_on_previous_text=False,  # prevents repetition loops, saves time
-            vad_filter=False,  # recorder already trims silence
+            beam_size=1,
+            temperature=0.0,
+            condition_on_previous_text=False,
+            vad_filter=False,
             word_timestamps=word_timestamps,
-            without_timestamps=not word_timestamps,  # fewer tokens to decode when unused
+            without_timestamps=not word_timestamps,
         )
 
         words: list[tuple[float, float, str]] = []
@@ -268,7 +227,6 @@ class Transcriber:
 
     @classmethod
     def _read_wav_to_array(cls, path: Path) -> np.ndarray:
-        """Read a mono 16 kHz WAV into a float32 array normalised to [-1, 1]."""
         try:
             with wave.open(str(path), "rb") as wf:
                 frames = wf.readframes(wf.getnframes())
@@ -278,7 +236,6 @@ class Transcriber:
 
     @staticmethod
     def _wav_duration(path: Path) -> float:
-        """Cheap O(1) duration lookup from the WAV header."""
         try:
             with wave.open(str(path), "rb") as wf:
                 return wf.getnframes() / float(wf.getframerate() or 16_000)

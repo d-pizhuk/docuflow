@@ -1,3 +1,4 @@
+# ai/screenshot_describer.py
 import base64
 import json
 import logging
@@ -7,11 +8,8 @@ from pathlib import Path
 
 from ai.api_gateway import ApiGateway, ApiGatewayError
 from ai.step_structurer import StructuredDoc
-from ai.languages import DEFAULT_DOCUMENTATION_LANGUAGE
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_VLM_MODEL = "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
 
 TEMPERATURE = 0.7
 MAX_JSON_REPAIR_ATTEMPTS = 1
@@ -27,9 +25,8 @@ class ScreenshotDescription:
 
 
 class ScreenshotDescriber:
-    def __init__(self, gateway: ApiGateway | None = None, model: str = DEFAULT_VLM_MODEL,
-                 language: str = DEFAULT_DOCUMENTATION_LANGUAGE):
-        self._gateway = gateway or ApiGateway()
+    def __init__(self, gateway: ApiGateway, model: str, language: str):
+        self._gateway = gateway
         self._model = model
         self._language = language
 
