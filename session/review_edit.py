@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QUrl
@@ -14,19 +15,47 @@ from export import exporter
 
 logger = logging.getLogger(__name__)
 
-_PREVIEW_DEBOUNCE_MS = 300   # re-render this long after the last keystroke (< NfReq3's 1 s)
-_PREVIEW_IMG_WIDTH = 460     # scale screenshots to this width in the live preview
+_PREVIEW_DEBOUNCE_MS = 300
+_PREVIEW_IMG_WIDTH = 460
+
+_DIALOG_STYLE = """
+QDialog { background-color: #f4f6f8; font-family: 'Segoe UI', Arial, sans-serif; }
+QLabel { color: #2c3e50; }
+QScrollArea { border: none; background-color: transparent; }
+QFrame#CardWidget { background-color: #ffffff; border: 1px solid #e0e4e8; border-radius: 8px; }
+QLineEdit, QPlainTextEdit {
+    background-color: #f8f9fa; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px;
+    color: #2c3e50;
+}
+QLineEdit:focus, QPlainTextEdit:focus { border: 1px solid #3498db; }
+QTabWidget::pane { border: 1px solid #d1d5db; border-radius: 4px; background: white; }
+QTabBar::tab {
+    background: #e0e4e8; color: #2c3e50; padding: 8px 16px; border: 1px solid #d1d5db;
+    border-bottom: none; border-top-left-radius: 4px; border-top-right-radius: 4px;
+}
+QTabBar::tab:selected { background: white; margin-bottom: -1px; }
+QPushButton {
+    background-color: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7; 
+    border-radius: 4px; padding: 6px 14px; font-weight: bold;
+}
+QPushButton:hover { background-color: #e0e6e8; }
+QPushButton#PrimaryBtn {
+    background-color: #2c3e50; color: white; border: 1px solid #2c3e50;
+}
+QPushButton#PrimaryBtn:hover { background-color: #34495e; }
+QPushButton#ExportBtn {
+    background-color: #27ae60; color: white; border: 1px solid #27ae60;
+}
+QPushButton#ExportBtn:hover { background-color: #2ecc71; }
+"""
 
 
 class _PreviewBrowser(QTextBrowser):
-    """Markdown preview that scales screenshots down on the fly via loadResource,
-    so we never blow up the view with a full-resolution capture and need no temp
-    files."""
-
     def __init__(self, image_dir: Path, parent=None):
         super().__init__(parent)
         self._image_dir = Path(image_dir)
         self.setOpenExternalLinks(False)
+        self.setStyleSheet("background: white; border: 1px solid #e0e4e8; border-radius: 4px;")
 
     def loadResource(self, type_, url: QUrl):
         if type_ == QTextDocument.ResourceType.ImageResource:
@@ -41,22 +70,16 @@ class _PreviewBrowser(QTextBrowser):
 
 
 class _StepCard(QFrame):
-    """One editable step: title, instruction, screenshot thumbnail and (if any)
-    the VLM image caption fields. Carries an AI/Edited badge that flips to
-    'Edited' the first time the user changes any field."""
-
     def __init__(self, index: int, step: MergedStep, image_dir: Path, on_changed):
         super().__init__()
+        self.setObjectName("CardWidget")
         self._screenshot = step.screenshot
         self._on_changed = on_changed
         self._edited = False
 
-        self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setStyleSheet("QFrame { background: #fbfbfd; border: 1px solid #e3e3ea; border-radius: 8px; }")
-
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(12, 10, 12, 12)
-        outer.setSpacing(6)
+        outer.setContentsMargins(16, 12, 16, 16)
+        outer.setSpacing(10)
 
         header = QHBoxLayout()
         header.addWidget(_dim(f"Step {index}"))
@@ -68,12 +91,13 @@ class _StepCard(QFrame):
         outer.addLayout(header)
 
         self._title = QLineEdit(step.title)
-        self._title.setStyleSheet("font-weight: bold; font-size: 14px; border: 1px solid #ddd; border-radius: 4px; padding: 4px;")
+        self._title.setStyleSheet(
+            "font-weight: bold; font-size: 15px; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px;")
         self._title.textEdited.connect(self._mark_edited)
         outer.addWidget(self._title)
 
         self._instruction = QPlainTextEdit(step.instruction)
-        self._instruction.setFixedHeight(64)
+        self._instruction.setFixedHeight(70)
         self._instruction.textChanged.connect(self._mark_edited)
         outer.addWidget(self._instruction)
 
@@ -82,10 +106,12 @@ class _StepCard(QFrame):
 
         if self._screenshot:
             row = QHBoxLayout()
+            row.setSpacing(12)
+
             thumb = QLabel()
             thumb.setFixedSize(180, 110)
             thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            thumb.setStyleSheet("border: 1px solid #ddd; border-radius: 4px; color: #999;")
+            thumb.setStyleSheet("background: #f0f2f5; border: 1px solid #d1d5db; border-radius: 4px; color: #999;")
             pix = QPixmap(str(Path(image_dir) / self._screenshot))
             if pix.isNull():
                 thumb.setText("image\nnot found")
@@ -95,16 +121,20 @@ class _StepCard(QFrame):
             row.addWidget(thumb)
 
             cap = QVBoxLayout()
+            cap.setSpacing(6)
             cap.addWidget(_dim(f"📷 {self._screenshot}"))
+
             self._image_title = QLineEdit(step.image_title or "")
             self._image_title.setPlaceholderText("Image title (AI)")
             self._image_title.textEdited.connect(self._mark_edited)
             cap.addWidget(self._image_title)
+
             self._image_desc = QPlainTextEdit(step.image_description or "")
             self._image_desc.setPlaceholderText("Image description (AI)")
-            self._image_desc.setFixedHeight(48)
+            self._image_desc.setFixedHeight(50)
             self._image_desc.textChanged.connect(self._mark_edited)
             cap.addWidget(self._image_desc)
+
             row.addLayout(cap)
             outer.addLayout(row)
 
@@ -119,10 +149,12 @@ class _StepCard(QFrame):
     def _update_badge(self):
         if self._edited:
             self._badge.setText("Edited")
-            self._badge.setStyleSheet("background:#f39c12; color:white; border-radius:8px; font-size:11px; padding:2px;")
+            self._badge.setStyleSheet(
+                "background:#f39c12; color:white; border-radius:10px; font-size:11px; font-weight: bold; padding:2px;")
         else:
             self._badge.setText("AI")
-            self._badge.setStyleSheet("background:#27ae60; color:white; border-radius:8px; font-size:11px; padding:2px;")
+            self._badge.setStyleSheet(
+                "background:#27ae60; color:white; border-radius:10px; font-size:11px; font-weight: bold; padding:2px;")
 
     def to_step(self) -> MergedStep:
         return MergedStep(
@@ -135,43 +167,46 @@ class _StepCard(QFrame):
 
 
 class ReviewEditWindow(QDialog):
-    """Req9: editable, side-by-side review of the generated documentation, with a
-    live Markdown preview, AI/Edited labels, the original transcript for
-    comparison, and HTML/PDF export (Req10)."""
-
     def __init__(self, merged: MergedDoc | None, annotated: str, session_dir: Path,
                  error: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Review & Edit Documentation")
-        self.resize(960, 680)
+        self.resize(1000, 720)
+        # Allow minimizing and closing
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
+        self.setStyleSheet(_DIALOG_STYLE)
 
         self._session_dir = Path(session_dir)
         self._cards: list[_StepCard] = []
 
         root = QVBoxLayout(self)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(16)
 
         if error:
-            banner = QLabel(f"⚠ AI generation failed: {error}\nYour transcript is shown on the right and saved in the session folder.")
+            banner = QLabel(
+                f"⚠ AI generation failed: {error}\nYour transcript is shown on the right and saved in the session folder.")
             banner.setWordWrap(True)
-            banner.setStyleSheet("background:#fdecea; color:#922b21; border-radius:6px; padding:8px;")
+            banner.setStyleSheet(
+                "background:#fdecea; color:#922b21; border-radius:6px; padding:12px; border: 1px solid #f5c6cb;")
             root.addWidget(banner)
 
-        # Document title
         title_row = QHBoxLayout()
         title_row.addWidget(_dim("Title"))
         self._title_edit = QLineEdit(merged.title if merged else "Documentation")
-        self._title_edit.setStyleSheet("font-size: 16px; font-weight: bold; padding: 4px;")
+        self._title_edit.setStyleSheet(
+            "font-size: 18px; font-weight: bold; border: 1px solid #d1d5db; border-radius: 4px; padding: 8px; background: #ffffff;")
         self._title_edit.textEdited.connect(self._schedule_preview)
         title_row.addWidget(self._title_edit)
         root.addLayout(title_row)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setStyleSheet("QSplitter::handle { background-color: #e0e4e8; }")
         root.addWidget(splitter, 1)
 
-        # Left: editable step cards
         left = QWidget()
         left_layout = QVBoxLayout(left)
-        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setContentsMargins(0, 0, 6, 0)
         if merged and merged.steps:
             for i, step in enumerate(merged.steps, 1):
                 card = _StepCard(i, step, self._session_dir, self._schedule_preview)
@@ -186,7 +221,6 @@ class ReviewEditWindow(QDialog):
         scroll.setWidget(left)
         splitter.addWidget(scroll)
 
-        # Right: tabs (rendered preview + original transcript)
         tabs = QTabWidget()
         self._preview = _PreviewBrowser(self._session_dir)
         tabs.addTab(self._preview, "Preview")
@@ -196,24 +230,26 @@ class ReviewEditWindow(QDialog):
         transcript_view.setPlainText(annotated or "(no transcript)")
         tabs.addTab(transcript_view, "Original transcript")
         splitter.addWidget(tabs)
-        splitter.setSizes([520, 440])
+        splitter.setSizes([540, 460])
 
-        # Bottom bar
         bar = QHBoxLayout()
         self._status = QLabel("")
-        self._status.setStyleSheet("color:#555; font-size: 11px;")
+        self._status.setStyleSheet("color:#555; font-size: 12px;")
         bar.addWidget(self._status)
         bar.addStretch()
 
         self._html_btn = QPushButton("Export HTML")
+        self._html_btn.setObjectName("ExportBtn")
         self._html_btn.clicked.connect(lambda: self._export("html"))
         bar.addWidget(self._html_btn)
 
         self._pdf_btn = QPushButton("Export PDF")
+        self._pdf_btn.setObjectName("ExportBtn")
         self._pdf_btn.clicked.connect(lambda: self._export("pdf"))
         bar.addWidget(self._pdf_btn)
 
         done = QPushButton("Done")
+        done.setObjectName("PrimaryBtn")
         done.clicked.connect(self.accept)
         bar.addWidget(done)
         root.addLayout(bar)
@@ -222,7 +258,6 @@ class ReviewEditWindow(QDialog):
             self._html_btn.setEnabled(False)
             self._pdf_btn.setEnabled(False)
 
-        # Debounced live preview (NfReq3: update within 1 s of an edit)
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
         self._preview_timer.setInterval(_PREVIEW_DEBOUNCE_MS)
@@ -230,22 +265,14 @@ class ReviewEditWindow(QDialog):
 
         self._render_preview()
 
-    # ------------------------------------------------------------------ #
-    # Building the current (possibly edited) document
-    # ------------------------------------------------------------------ #
-
     def current_doc(self) -> MergedDoc:
         return MergedDoc(
             title=self._title_edit.text().strip() or "Documentation",
             steps=[c.to_step() for c in self._cards],
         )
 
-    # ------------------------------------------------------------------ #
-    # Live preview
-    # ------------------------------------------------------------------ #
-
     def _schedule_preview(self, *_):
-        self._preview_timer.start()  # restart; renders once typing pauses
+        self._preview_timer.start()
 
     def _render_preview(self):
         self._preview.setMarkdown(self._build_markdown(self.current_doc()))
@@ -272,10 +299,6 @@ class ReviewEditWindow(QDialog):
             lines.append("")
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------ #
-    # Export (Req10)
-    # ------------------------------------------------------------------ #
-
     def _export(self, fmt: str):
         suffix = ".html" if fmt == "html" else ".pdf"
         default = str(self._session_dir / f"documentation{suffix}")
@@ -290,17 +313,20 @@ class ReviewEditWindow(QDialog):
             else:
                 exporter.to_pdf(self.current_doc(), self._session_dir, Path(out_path))
             self._status.setText(f"Exported to {out_path}")
+            self._status.setStyleSheet("color:#27ae60; font-size: 12px;")
         except exporter.ExportError as exc:
             logger.warning("Export failed: %s", exc)
             QMessageBox.warning(self, "Export failed", str(exc))
             self._status.setText("Export failed — your edits are unchanged.")
-        except Exception as exc:  # noqa: BLE001 — never let export crash the editor
+            self._status.setStyleSheet("color:#e74c3c; font-size: 12px;")
+        except Exception as exc:
             logger.exception("Unexpected export error")
             QMessageBox.warning(self, "Export failed", f"Unexpected error: {exc}")
             self._status.setText("Export failed — your edits are unchanged.")
+            self._status.setStyleSheet("color:#e74c3c; font-size: 12px;")
 
 
 def _dim(text: str) -> QLabel:
     lbl = QLabel(text)
-    lbl.setStyleSheet("color:#888; font-size: 11px;")
+    lbl.setStyleSheet("color:#7f8c8d; font-size: 11px; font-weight: bold;")
     return lbl

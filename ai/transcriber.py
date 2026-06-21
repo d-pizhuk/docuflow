@@ -30,7 +30,7 @@ def _resolve_model_dir() -> Path:
 
 MODEL_DIR = _resolve_model_dir()
 DEVICE = "cpu"
-COMPUTE_TYPE = "int8"            # fastest CPU path; negligible accuracy loss vs float
+COMPUTE_TYPE = "int8"  # fastest CPU path; negligible accuracy loss vs float
 
 
 def _physical_cores() -> int:
@@ -54,7 +54,7 @@ def _physical_cores() -> int:
 # live transcription fell behind and a backlog drained at Stop. A single worker
 # at full width transcribes the (small) post-Stop tail as fast as the machine
 # physically can, with zero oversubscription.
-NUM_WORKERS = 1
+NUM_WORKERS = 2
 CPU_THREADS = _physical_cores()
 
 _REQUIRED_FILES = {"model.bin", "config.json", "tokenizer.json"}
@@ -96,13 +96,14 @@ class Transcriber:
 
     _SAMPLE_RATE = 16_000
 
-    def __init__(self, on_chunk_transcribed: Callable[[TranscribedChunk], None]):
+    def __init__(self, on_chunk_transcribed: Callable[[TranscribedChunk], None], language: str = "en"):
         self._validate_model_dir()
         self._on_result = on_chunk_transcribed
         self._queue: queue.Queue[_Job | None] = queue.Queue()
         self._model: WhisperModel | None = None
         self._model_ready = threading.Event()
         self._workers: list[threading.Thread] = []
+        self.language = language  # ISO 639-1 language code (e.g. "en", "de")
         # One boot thread loads the model, warms it up, then spawns the worker(s).
         self._boot = threading.Thread(target=self._boot_and_serve, daemon=True, name="transcriber-boot")
         self._boot.start()
@@ -136,7 +137,7 @@ class Transcriber:
     def finish(self):
         """Signal all workers to stop and block until the queue is drained."""
         for _ in self._workers:
-            self._queue.put(None)               # one sentinel per worker
+            self._queue.put(None)  # one sentinel per worker
         for w in self._workers:
             w.join()
 
@@ -182,10 +183,10 @@ class Transcriber:
             t0 = time.monotonic()
             silent = np.zeros(self._SAMPLE_RATE, dtype=np.float32)  # 1 s of silence
             segments, _ = self._model.transcribe(
-                silent, language="en", beam_size=1, temperature=0.0,
+                silent, language=self.language, beam_size=1, temperature=0.0,
                 vad_filter=False, without_timestamps=True,
             )
-            for _ in segments:   # transcribe() is lazy — force it to actually run
+            for _ in segments:  # transcribe() is lazy — force it to actually run
                 pass
             print(f"[whisper] warmup complete in {time.monotonic() - t0:.1f}s", flush=True)
         except Exception:
@@ -238,12 +239,12 @@ class Transcriber:
 
         segments, _ = self._model.transcribe(
             audio_array,
-            language="en",                    # skip language detection
+            language=self.language,  # skip language detection
             task="transcribe",
-            beam_size=1,                      # greedy — big CPU win, negligible loss
-            temperature=0.0,                  # disable multi-temperature fallback re-decoding
-            condition_on_previous_text=False, # prevents repetition loops, saves time
-            vad_filter=False,                 # recorder already trims silence
+            beam_size=1,  # greedy — big CPU win, negligible loss
+            temperature=0.0,  # disable multi-temperature fallback re-decoding
+            condition_on_previous_text=False,  # prevents repetition loops, saves time
+            vad_filter=False,  # recorder already trims silence
             word_timestamps=word_timestamps,
             without_timestamps=not word_timestamps,  # fewer tokens to decode when unused
         )

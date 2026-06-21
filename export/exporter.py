@@ -3,13 +3,13 @@ import html
 import logging
 from pathlib import Path
 
+from xhtml2pdf import pisa
+
 from ai.doc_merger import MergedDoc
 
 logger = logging.getLogger(__name__)
 
-# Downscale embedded/printed images so output files stay a sane size.
 _HTML_MAX_IMG_WIDTH = 1400
-_PDF_MAX_IMG_WIDTH = 640
 
 
 class ExportError(RuntimeError):
@@ -20,13 +20,14 @@ class ExportError(RuntimeError):
 _CSS = """
 body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
        max-width: 820px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.6; }
-h1 { font-size: 28px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-h2 { font-size: 20px; margin-top: 32px; }
+h1 { font-size: 28px; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+h2 { font-size: 20px; margin-top: 32px; margin-bottom: 10px; }
 .step { margin-bottom: 28px; }
-.step p { margin: 8px 0; }
-figure { margin: 12px 0; }
-img { max-width: 100%; border: 1px solid #ddd; border-radius: 6px; }
-figcaption { font-size: 13px; color: #555; margin-top: 6px; }
+p { margin: 0 0 12px 0; line-height: 1.5; }
+.img-wrap { text-align: center; margin: 0; padding: 0; }
+.img-wrap img { max-width: 100%; border: 1px solid #ddd; display: block; margin: 0 auto; }
+.img-caption { text-align: center; font-size: 13px; color: #555;
+               line-height: 1.3; margin: 4px 0 16px 0; padding: 0; }
 """.strip()
 
 
@@ -45,51 +46,22 @@ def to_html(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
 
 
 def to_pdf(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
-    """Render the documentation to a PDF using Qt (no external dependencies)."""
-    try:
-        from PySide6.QtCore import QMarginsF, QSizeF, QUrl, Qt
-        from PySide6.QtGui import (
-            QImage, QPageLayout, QPageSize, QPdfWriter, QTextDocument,
+    """Render the documentation to a PDF using xhtml2pdf (pure Python, no system deps)."""
+    markup = _build_html(doc, Path(image_dir), embed=True)
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with out_path.open("wb") as pdf_file:
+        result = pisa.CreatePDF(
+            src=markup,
+            dest=pdf_file,
+            encoding="utf-8",
         )
-    except Exception as exc:  # pragma: no cover - PySide6 always present in-app
-        raise ExportError(f"PDF export requires PySide6: {exc}") from exc
 
-    image_dir = Path(image_dir)
-    writer = QPdfWriter(str(out_path))
-    writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-    writer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout.Unit.Millimeter)
-    writer.setResolution(96)
+    if result.err:
+        raise ExportError(f"PDF rendering failed with {result.err} error(s).")
 
-    td = QTextDocument()
-    td.setDefaultStyleSheet(_CSS)
-
-    # Register each screenshot as a resource so <img src="filename"> resolves.
-    # Scale large images down so they fit the page.
-    for step in doc.steps:
-        if not step.screenshot:
-            continue
-        path = image_dir / step.screenshot
-        if not path.exists():
-            logger.warning("PDF export: screenshot not found: %s", path)
-            continue
-        img = QImage(str(path))
-        if img.isNull():
-            continue
-        if img.width() > _PDF_MAX_IMG_WIDTH:
-            img = img.scaledToWidth(_PDF_MAX_IMG_WIDTH, Qt.TransformationMode.SmoothTransformation)
-        td.addResource(QTextDocument.ResourceType.ImageResource, QUrl(step.screenshot), img)
-
-    td.setHtml(_build_html(doc, image_dir, embed=False))
-
-    layout = writer.pageLayout()
-    page_px = layout.paintRectPixels(writer.resolution())
-    td.setPageSize(QSizeF(page_px.size()))
-
-    try:
-        td.print_(writer)
-    except Exception as exc:
-        raise ExportError(f"PDF rendering failed: {exc}") from exc
-    return Path(out_path)
+    return out_path
 
 
 # --------------------------------------------------------------------------- #
@@ -113,24 +85,29 @@ def _build_html(doc: MergedDoc, image_dir: Path, *, embed: bool) -> str:
             parts.append(f"<p>{_esc(step.instruction)}</p>")
 
         if step.screenshot:
-            if embed:
-                src = _image_data_uri(image_dir / step.screenshot)
-            else:
-                # PDF path: reference the resource registered by URL (filename).
-                src = step.screenshot if (image_dir / step.screenshot).exists() else None
+            src = (
+                _image_data_uri(image_dir / step.screenshot)
+                if embed
+                else (step.screenshot if (image_dir / step.screenshot).exists() else None)
+            )
 
             if src:
                 alt = _esc(step.image_title or step.screenshot)
-                parts.append("<figure>")
-                parts.append(f"<img src='{src}' alt='{alt}'>")
-                caption = []
-                if step.image_title:
-                    caption.append(f"<strong>{_esc(step.image_title)}</strong>")
-                if step.image_description:
-                    caption.append(_esc(step.image_description))
-                if caption:
-                    parts.append(f"<figcaption>{' — '.join(caption)}</figcaption>")
-                parts.append("</figure>")
+                parts.append(
+                    f"<div class='img-wrap'>"
+                    f"<img src='{src}' alt='{alt}'>"
+                    f"</div>"
+                )
+
+                if step.image_title or step.image_description:
+                    caption_parts = []
+                    if step.image_title:
+                        caption_parts.append(f"<strong>{_esc(step.image_title)}</strong>")
+                    if step.image_description:
+                        caption_parts.append(_esc(step.image_description))
+                    parts.append(
+                        f"<p class='img-caption'>{' — '.join(caption_parts)}</p>"
+                    )
             else:
                 parts.append(f"<p><em>[screenshot missing: {_esc(step.screenshot)}]</em></p>")
 
@@ -150,8 +127,6 @@ def _image_data_uri(path: Path) -> str | None:
 
     media = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
 
-    # Downscale for HTML so the embedded file does not balloon. Optional: if
-    # Pillow is unavailable we embed the original bytes.
     try:
         import io
         from PIL import Image

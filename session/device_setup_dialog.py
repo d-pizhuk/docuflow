@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
 )
 
+from ai.languages import DOCUMENTATION_LANGUAGES, DEFAULT_DOCUMENTATION_LANGUAGE, WHISPER_LANGUAGE_CODES
+
 
 class _ModelReadyEvent(QEvent):
     _TYPE = QEvent.Type(QEvent.registerEventType())
@@ -24,7 +26,9 @@ class DeviceSetupDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("DocuFlow — Device Setup")
         self.setMinimumWidth(520)
+        # Make it a standard window so it can be minimized and closed properly
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
 
         self._devices: list[tuple[int, str]] = []
         self._test_stream: sd.InputStream | None = None
@@ -93,7 +97,7 @@ class DeviceSetupDialog(QDialog):
         root.addWidget(_bold_label("Speech Recognition Model"))
 
         self._model_bar = QProgressBar()
-        self._model_bar.setRange(0, 0)      # pulsing / indeterminate
+        self._model_bar.setRange(0, 0)  # pulsing / indeterminate
         self._model_bar.setTextVisible(False)
         self._model_bar.setFixedHeight(18)
         self._model_bar.setStyleSheet(_MODEL_BAR_STYLE)
@@ -102,6 +106,15 @@ class DeviceSetupDialog(QDialog):
         self._model_label = QLabel("⏳  Loading Whisper model from disk…")
         self._model_label.setStyleSheet("color: #888; font-size: 11px;")
         root.addWidget(self._model_label)
+
+        root.addWidget(_hsep())
+        root.addWidget(_bold_label("Documentation Language"))
+
+        self._lang_combo = QComboBox()
+        self._lang_combo.addItems(DOCUMENTATION_LANGUAGES)
+        self._lang_combo.setCurrentText(DEFAULT_DOCUMENTATION_LANGUAGE)
+        self._lang_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        root.addWidget(self._lang_combo)
 
         root.addStretch()
 
@@ -129,10 +142,6 @@ class DeviceSetupDialog(QDialog):
         dialog = self
 
         def _load():
-            # NOTE: cross-thread UI notification MUST go through
-            # QCoreApplication.postEvent (thread-safe). QTimer.singleShot posts
-            # to the *calling* thread's event loop — this worker has none, so the
-            # event would never fire and the dialog would hang on "Loading…".
             try:
                 from ai.transcriber import Transcriber
                 t = Transcriber(on_chunk_transcribed=lambda _: None)
@@ -262,6 +271,11 @@ class DeviceSetupDialog(QDialog):
             self._sel_idx, self._sel_name = self._devices[pos]
         else:
             self._sel_idx, self._sel_name = None, "Unknown"
+
+        if self._transcriber is not None:
+            sel_lang = self._lang_combo.currentText()
+            self._transcriber.language = WHISPER_LANGUAGE_CODES.get(sel_lang, "en")
+
         self.accept()
 
     def get_config(self) -> dict:
@@ -269,6 +283,7 @@ class DeviceSetupDialog(QDialog):
             "device_index": getattr(self, "_sel_idx", self._devices[0][0] if self._devices else 0),
             "device_name": getattr(self, "_sel_name", "Unknown"),
             "transcriber": self._transcriber,
+            "documentation_language": self._lang_combo.currentText(),
         }
 
     def closeEvent(self, event):
