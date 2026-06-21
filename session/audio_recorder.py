@@ -24,12 +24,14 @@ class AudioRecorderThread(QThread):
     # VAD / chunking config
     SILENCE_THRESHOLD = 0.01        # RMS below this = silence
     SILENCE_MIN_BLOCKS = 8          # ~0.5 s of silence before a cut is allowed
-    # Smaller chunks than before: the chunk flushed at Stop is at most
-    # CHUNK_MAX_BLOCKS long, and silence cuts it earlier — so the post-Stop
-    # transcription tail stays small (a few seconds of audio → a few seconds
-    # to transcribe). Live transcription already keeps up during the session.
-    CHUNK_MIN_BLOCKS = 150          # ~9.5 s minimum before looking for a cut
-    CHUNK_MAX_BLOCKS = 300          # ~19 s hard cap
+    # Chunk sizing is chosen to BOUND THE POST-STOP TAIL. The only audio left to
+    # transcribe at Stop is the in-progress chunk, so its hard cap is the worst
+    # case the user waits on. ~15 s cap → a few seconds of transcription on any
+    # reasonable CPU (turbo/int8 runs several × real-time). Silence cuts most
+    # chunks earlier. Live transcription has ample headroom to keep up, so no
+    # backlog forms and Stop only pays for this last short chunk.
+    CHUNK_MIN_BLOCKS = 125          # ~8 s minimum before looking for a silence cut
+    CHUNK_MAX_BLOCKS = 235          # ~15 s hard cap (bounds the post-Stop tail)
 
     def __init__(self, device_index: int, output_dir: Path, parent=None):
         super().__init__(parent)

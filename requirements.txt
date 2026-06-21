@@ -7,3 +7,5 @@ faster-whisper==1.1.0
 requests==2.34.2
 openai>=1.40
 Pillow>=10.0
+huggingface_hub~=1.20.1
+psutil>=5.9
