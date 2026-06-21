@@ -1,0 +1,85 @@
+{
+  "title": "Create a Branch and Open a Pull Request on GitHub",
+  "steps": [
+    {
+      "title": "Open the Repository Main Page",
+      "instruction": "In this tutorial I want to show you the full workflow of creating a branch and then opening a pull request on GitHub. I already have a repository open here called Demo Project.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a New Branch",
+      "instruction": "The first thing we want to do is create a new branch to work on our feature or bug fix. Look at the top left area of the file list, you will see a drop down button that currently says main.",
+      "screenshot": null
+    },
+    {
+      "title": "Click on the Branch Drop-Down Button",
+      "instruction": "Click on that branch drop down button. A small pop over appear with a search field and the list of existing branches.",
+      "screenshot": null
+    },
+    {
+      "title": "Enter the New Branch Name",
+      "instruction": "In the search field I'm going to type the name of my new branch. I'll call it Feature Add Login.",
+      "screenshot": null
+    },
+    {
+      "title": "Create the Branch",
+      "instruction": "You will see that GitHub shows a suggestion that says Create branch Feature Add Login from main. Click on that suggestion to create the branch.",
+      "screenshot": null
+    },
+    {
+      "title": "Make a Change on the New Branch",
+      "instruction": "The page refreshes and the branch drop-down now shows feature ad login, which means we are now on that branch. Great, so now let's make a small change on this branch to simulate doing some work.",
+      "screenshot": null
+    },
+    {
+      "title": "Open the README File",
+      "instruction": "I will click on the README file to open it.",
+      "screenshot": null
+    },
+    {
+      "title": "Edit the README File",
+      "instruction": "Once the file is open, click the pencil icon in the top right of the file view to edit it.",
+      "screenshot": null
+    },
+    {
+      "title": "Add a New Line to the README File",
+      "instruction": "I'll add a new line at the bottom that says Edit login feature documentation.",
+      "screenshot": null
+    },
+    {
+      "title": "Commit the Changes",
+      "instruction": "Now scroll down to the commit changes section. You will see a text fill for the commit message. Type something descriptive like add login notes to readme. Make sure the option is set to commit directly to the feature at login branch. Then click the green Commit Changes button.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a Pull Request",
+      "instruction": "Ok, so now we have a commit on our feature branch. GitHub will often show you a yellow banner at the top of the repository saying that your branch had recent pushes and asking if you want to compare and create a pull request.",
+      "screenshot": null
+    },
+    {
+      "title": "Click on the Pull Request Tab",
+      "instruction": "Let's click on Pull Request and then click the green New Pull Request button.",
+      "screenshot": null
+    },
+    {
+      "title": "Set the Base and Compare Branches",
+      "instruction": "On the Pull Request creation page, you need to set the base branch and the compare branch. The base branch is where we want to merge our changes inter, which is main. The Compare branch is the branch with our changes, which is feature add login.",
+      "screenshot": null
+    },
+    {
+      "title": "Fill in the Pull Request Title and Description",
+      "instruction": "Make sure those are set correctly. GitHub will show you a difference of the changes below. You should see the line we added to the readme highlighted in green. Now fill in the pull request title. I'll type add login feature documentation as the title. In the description box, we can add more context about what the pull request does, why you made these changes or link to any related issues.",
+      "screenshot": null
+    },
+    {
+      "title": "Add Optional Information and Create the Pull Request",
+      "instruction": "I will add a short note saying this PR adds initial documentation for the login feature. On the right side, you can optionally assign reviewers, add labels or link to a project. For now, I will skip those. When you are ready, click the green button. create pull request button.",
+      "screenshot": null
+    },
+    {
+      "title": "View the Open Pull Request",
+      "instruction": "Your pull request is now open and you can see it in the pull request tab with the title we gave it. Other team members can now review it, leave comments and eventually someone with right access can merge it into main.",
+      "screenshot": null
+    }
+  ]
+}

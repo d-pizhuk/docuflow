@@ -1,0 +1,49 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Navigate to the repository page",
+      "instruction": "Navigate to the repository page on GitHub that you want to fork. You can see the repository name at the top, the file list, and various tabs like Code, Issues, and Pull requests."
+    },
+    {
+      "step": 2,
+      "title": "Click the Fork button",
+      "instruction": "In the top right area of the repository page, just below the navigation bar, you will see three buttons: Watch, Fork, and Star. Click the Fork button."
+    },
+    {
+      "step": 3,
+      "title": "Configure and create the fork",
+      "instruction": "GitHub will show you the Create a new fork page. Make sure your account is selected in the owner field. You can also change the repository name if you want a different name for your fork, but usually you keep the same name. When you are ready click the green Create fork button at the bottom."
+    },
+    {
+      "step": 4,
+      "title": "Verify the fork",
+      "instruction": "GitHub will redirect you to your fork. You can tell it is your fork because the URL now shows your username in the path and there is a label just below the repository name that says forked from and then the original repository."
+    },
+    {
+      "step": 5,
+      "title": "Copy the HTTPS clone URL",
+      "instruction": "Click the green Code button on your fork's repository page. A small dropdown appears with different clone options: HTTPS, SSH, and GitHub CLI. Click the copy icon next to the HTTPS URL to copy it to your clipboard."
+    },
+    {
+      "step": 6,
+      "title": "Navigate to your projects directory",
+      "instruction": "Switch to your terminal. Navigate to the directory where you want to store your projects. For example type cd Documents and press Enter, or wherever you keep your code."
+    },
+    {
+      "step": 7,
+      "title": "Clone the fork",
+      "instruction": "Type git clone followed by a space and then paste the URL you just copied. Press Enter to run the command. Git will connect to GitHub and download all the repository files. You will see progress output showing the objects being received."
+    },
+    {
+      "step": 8,
+      "title": "Enter the cloned directory",
+      "instruction": "Once it finishes type cd followed by the repository name and press Enter to navigate into the cloned folder."
+    },
+    {
+      "step": 9,
+      "title": "Verify the files",
+      "instruction": "Type ls on Mac or Linux, or dir on Windows, to list the files and confirm they are all there. You now have a local copy of your fork."
+    }
+  ]
+}

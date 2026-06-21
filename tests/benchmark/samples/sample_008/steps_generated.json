@@ -1,0 +1,65 @@
+{
+  "title": "Connect a Local Git Repository to a Remote on GitHub and Push Your Local Branch",
+  "steps": [
+    {
+      "title": "Verify the Local Git Repository",
+      "instruction": "Type git status in the terminal and press enter. Verify that there are some commits already in the log and you are on the main branch.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a New Empty Repository on GitHub",
+      "instruction": "Open your browser and go to github.com. Create a new empty repository by clicking the plus icon and selecting new repository.",
+      "screenshot": null
+    },
+    {
+      "title": "Configure the New Repository",
+      "instruction": "Give it a name. Do not check the initialize this repository with a readme option.",
+      "screenshot": null
+    },
+    {
+      "title": "Create the Repository",
+      "instruction": "Click Create repository.",
+      "screenshot": null
+    },
+    {
+      "title": "Find the Push Commands",
+      "instruction": "GitHub will now show you a page with setup instructions since the repository is empty. Look for the section that says push an existing repository from the command line.",
+      "screenshot": null
+    },
+    {
+      "title": "Copy the First Command",
+      "instruction": "Copy the first command: git remote add origin followed by the https or ssh url of your repository.",
+      "screenshot": null
+    },
+    {
+      "title": "Add the Remote Repository",
+      "instruction": "Switch back to your terminal. Paste and run the git remote add origin command. Press Enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Remote Repository",
+      "instruction": "Type git remote -v and press Enter. Verify that origin is listed twice, once for fetch and once for push, both pointing to your GitHub repository URL.",
+      "screenshot": null
+    },
+    {
+      "title": "Push the Local Branch",
+      "instruction": "Type git push -u origin main and press enter. The -u flag sets the upstream tracking relationship.",
+      "screenshot": null
+    },
+    {
+      "title": "Authenticate with GitHub",
+      "instruction": "You may be prompted to enter your GitHub username and a personal access token as the password. If you haven't set up a personal access token yet, you'll need to create one in GitHub under Settings Developer Settings Personal Access Tokens.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Push",
+      "instruction": "Once authentication succeeds, Git will upload your commits and you should see output showing the objects being written and a confirmation that your branch was pushed.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Repository on GitHub",
+      "instruction": "Switch back to your browser and refresh the GitHub repository page. Verify that all your files and commit history are now visible.",
+      "screenshot": null
+    }
+  ]
+}

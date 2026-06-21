@@ -1,0 +1,54 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Prepare the application files",
+      "instruction": "Make sure the project folder contains a file called app.py which is your application and a requirements.txt with the dependencies. The app.py just starts a Flask server that returns Hello from Docker on the home route."
+    },
+    {
+      "step": 2,
+      "title": "Create the Dockerfile",
+      "instruction": "Open your text editor and create a new file called Dockerfile with a capital D and no file extension in the project root."
+    },
+    {
+      "step": 3,
+      "title": "Set the base image",
+      "instruction": "The first instruction in a Dockerfile is always FROM which specifies the base image. Type FROM python:3.11-slim on the first line. This tells Docker to use the official Python 3.11 slim image as the starting point. The slim variant is smaller and faster to download than the full image."
+    },
+    {
+      "step": 4,
+      "title": "Set the working directory and copy dependencies",
+      "instruction": "On the next line type WORKDIR /app. This sets the working directory inside the container to /app. Now type COPY requirements.txt . with a dot at the end. The dot means copy into the current working directory which is /app. On the next line type RUN pip install --no-cache-dir -r requirements.txt to install the Python dependencies inside the container. We do this before copying the application code because Docker caches each layer and if dependencies don't change this step won't re-run on future builds."
+    },
+    {
+      "step": 5,
+      "title": "Copy the application code and expose the port",
+      "instruction": "Type COPY . . to copy the rest of the application code into the container. Then type EXPOSE 5000 to tell Docker that the container listens on port 5000."
+    },
+    {
+      "step": 6,
+      "title": "Set the start command and save",
+      "instruction": "Type CMD with square brackets, then the command to start the application. So CMD open square bracket quote python quote comma quote app.py quote close square bracket. Save the Dockerfile."
+    },
+    {
+      "step": 7,
+      "title": "Build the Docker image",
+      "instruction": "Open your terminal and navigate to the project folder. Type docker build -t my-flask-app dot and press Enter. The -t flag gives the image a name, in this case my-flask-app, and the dot tells Docker to look for the Dockerfile in the current directory. When the build finishes you will see a message saying Successfully built followed by an image ID and then Successfully tagged my-flask-app:latest."
+    },
+    {
+      "step": 8,
+      "title": "Run the container",
+      "instruction": "Type docker run -p 5000:5000 my-flask-app and press Enter. The -p 5000:5000 flag maps port 5000 on your host machine to port 5000 inside the container. You should see the Flask development server starting up."
+    },
+    {
+      "step": 9,
+      "title": "Verify the application in the browser",
+      "instruction": "Open your browser and go to http://localhost:5000. You should see the message Hello from Docker in your browser. Your Flask application is now running inside a Docker container."
+    },
+    {
+      "step": 10,
+      "title": "Stop the container",
+      "instruction": "To stop the container press Control C in the terminal."
+    }
+  ]
+}
