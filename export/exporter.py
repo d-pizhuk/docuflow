@@ -1,9 +1,12 @@
 import base64
 import html
 import logging
+import re
 from pathlib import Path
 
 from xhtml2pdf import pisa
+import markdownify
+from bs4 import BeautifulSoup
 
 from ai.doc_merger import MergedDoc
 
@@ -64,8 +67,38 @@ def to_pdf(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
     return out_path
 
 
+def to_markdown(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
+    """Write a Markdown file converted from the HTML representation via markdownify.
+
+    This ensures 100% consistency with the HTML output and avoids duplicating
+    document generation logic (DRY principle).
+    """
+    try:
+        markup = _build_html(doc, Path(image_dir), embed=False)
+
+        # Extract only the <body> to avoid converting <head> (title, style, meta)
+        # which would leak into the Markdown output.
+        soup = BeautifulSoup(markup, "html.parser")
+        body = soup.find("body")
+        html_body = str(body) if body else markup
+
+        # Convert HTML to Markdown using ATX headers (# style) which is the
+        # modern standard for GitHub Flavored Markdown.
+        content = markdownify.markdownify(html_body, heading_style="ATX", bullets="-")
+
+        # Clean up excessive blank lines that HTML -> MD conversion can introduce
+        content = re.sub(r'\n{3,}', '\n\n', content).strip()
+
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(content + "\n", encoding="utf-8")
+        return out_path
+    except OSError as exc:
+        raise ExportError(f"Could not write Markdown file: {exc}") from exc
+
+
 # --------------------------------------------------------------------------- #
-# HTML construction (shared by HTML export and the PDF renderer)
+# HTML construction (shared by HTML, PDF, and Markdown exporters)
 # --------------------------------------------------------------------------- #
 
 def _build_html(doc: MergedDoc, image_dir: Path, *, embed: bool) -> str:

@@ -248,6 +248,11 @@ class ReviewEditWindow(QDialog):
         self._pdf_btn.clicked.connect(lambda: self._export("pdf"))
         bar.addWidget(self._pdf_btn)
 
+        self._md_btn = QPushButton("Export Markdown")
+        self._md_btn.setObjectName("ExportBtn")
+        self._md_btn.clicked.connect(lambda: self._export("md"))
+        bar.addWidget(self._md_btn)
+
         done = QPushButton("Done")
         done.setObjectName("PrimaryBtn")
         done.clicked.connect(self.accept)
@@ -257,6 +262,7 @@ class ReviewEditWindow(QDialog):
         if not self._cards:
             self._html_btn.setEnabled(False)
             self._pdf_btn.setEnabled(False)
+            self._md_btn.setEnabled(False)
 
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
@@ -300,9 +306,16 @@ class ReviewEditWindow(QDialog):
         return "\n".join(lines)
 
     def _export(self, fmt: str):
-        suffix = ".html" if fmt == "html" else ".pdf"
+        if fmt == "html":
+            suffix, filt = ".html", "HTML (*.html)"
+        elif fmt == "pdf":
+            suffix, filt = ".pdf", "PDF (*.pdf)"
+        elif fmt == "md":
+            suffix, filt = ".md", "Markdown (*.md)"
+        else:
+            suffix, filt = ".txt", "Text (*.txt)"
+
         default = str(self._session_dir / f"documentation{suffix}")
-        filt = "HTML (*.html)" if fmt == "html" else "PDF (*.pdf)"
         out_path, _ = QFileDialog.getSaveFileName(self, f"Export {fmt.upper()}", default, filt)
         if not out_path:
             return
@@ -310,8 +323,11 @@ class ReviewEditWindow(QDialog):
         try:
             if fmt == "html":
                 exporter.to_html(self.current_doc(), self._session_dir, Path(out_path))
-            else:
+            elif fmt == "pdf":
                 exporter.to_pdf(self.current_doc(), self._session_dir, Path(out_path))
+            elif fmt == "md":
+                exporter.to_markdown(self.current_doc(), self._session_dir, Path(out_path))
+
             self._status.setText(f"Exported to {out_path}")
             self._status.setStyleSheet("color:#27ae60; font-size: 12px;")
         except exporter.ExportError as exc:
