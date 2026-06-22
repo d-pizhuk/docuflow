@@ -9,7 +9,8 @@ from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve, 
 from PySide6.QtGui import QFont, QPixmap, QPainter, QCloseEvent, QCursor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QApplication, QPlainTextEdit, QDialog, QDialogButtonBox
+    QApplication, QPlainTextEdit, QDialog, QDialogButtonBox,
+    QMessageBox,
 )
 
 from ai.transcriber import Transcriber, TranscribedChunk
@@ -135,6 +136,12 @@ class GenerationProgressDialog(QDialog):
         if not self._programmatic_close and self.parent():
             self.parent().close()
         super().closeEvent(event)
+
+
+# ---------------------------------------------------------------------------
+# Transcript length guard constant (Design Q7)
+# ---------------------------------------------------------------------------
+_MAX_TRANSCRIPT_WORDS = 4000
 
 
 class SidebarPanel(QWidget):
@@ -403,6 +410,28 @@ class SidebarPanel(QWidget):
 
     def _start_generation(self, annotated: str, steps: list[AnnotatedStep], full_text: str):
         from PySide6.QtCore import QThreadPool, QRunnable
+
+        # ── Design Q7: Long-transcript guard ──────────────────────────────
+        # If the transcript exceeds the safe word limit, warn the user and
+        # let them choose whether to proceed or split into shorter sessions.
+        word_count = len(annotated.split())
+        if word_count > _MAX_TRANSCRIPT_WORDS:
+            reply = QMessageBox.warning(
+                self,
+                "Long Recording Warning",
+                f"The transcript contains {word_count:,} words, which exceeds the "
+                f"recommended limit of {_MAX_TRANSCRIPT_WORDS:,} words.\n\n"
+                "The LLM may fail, truncate, or produce low-quality output. "
+                "Consider splitting your recording into shorter sessions.\n\n"
+                "Do you want to proceed anyway?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                # Skip AI generation — show review window with transcript only
+                self._show_results(annotated, merged=None, error=None)
+                return
+        # ──────────────────────────────────────────────────────────────────
 
         self._progress_dlg = GenerationProgressDialog(self)
         self._progress_dlg.show()
