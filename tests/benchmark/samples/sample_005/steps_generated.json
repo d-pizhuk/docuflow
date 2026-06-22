@@ -1,0 +1,55 @@
+{
+  "title": "Fork a Public Repository on GitHub and Clone to Local Machine",
+  "steps": [
+    {
+      "title": "Navigate to the Repository Page on GitHub",
+      "instruction": "Navigate to the repository page on GitHub. You can see the repository name at the top. the file list and various steps like code, issues and pull requests.",
+      "screenshot": null
+    },
+    {
+      "title": "Click the Fork Button",
+      "instruction": "In the top right area of the repository page, just below the navigation bar, you will see three buttons \u2013 Watch, Fork and Star. Click the fork button.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a New Fork",
+      "instruction": "GitHub will now show you the create a new fork page. Here you can see the owner drop-down which should default to your own GitHub account. Make sure your account is selected in the owner. a field.",
+      "screenshot": null
+    },
+    {
+      "title": "Configure the Fork",
+      "instruction": "You can also change the repository name if you want a different name for your fork. But usually you keep the same name. There is also a checkbox that says copy the main branch only. For most use cases it's fine to leave this checked. but if you need all branches, you can uncheck it.",
+      "screenshot": null
+    },
+    {
+      "title": "Create the Fork",
+      "instruction": "When you are ready, click the green Create Work button at the bottom. GitHub will process this for a second and then redirect you to your fork.",
+      "screenshot": null
+    },
+    {
+      "title": "Clone the Fork to Local Machine",
+      "instruction": "Click the green code button on your fork's repository page. A small drop-down appears with different clone options, HTTPS, SSH, and GitHub CLI. I'll use HTTPS for simplicity.",
+      "screenshot": null
+    },
+    {
+      "title": "Copy the HTTPS URL",
+      "instruction": "Click the copy icon next to the HTTPS URL to copy it to your clipboard.",
+      "screenshot": null
+    },
+    {
+      "title": "Navigate to Local Directory",
+      "instruction": "Now switch to your terminal. Navigate to the directory where you want to store your projects. For example, type cd documents and press enter. Or wherever you kept you keep your code.",
+      "screenshot": null
+    },
+    {
+      "title": "Clone the Repository",
+      "instruction": "Now type git clone followed by a space and then paste the URL you just copied. Press enter to run the command. Git will connect to GitHub and download all the repository files.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Cloned Repository",
+      "instruction": "Once it finishes, type cd followed by the repository name and press Enter to navigate into the cloned folder. type ls on Mac or Linux or dir on Windows to list the files and confirm they are all there.",
+      "screenshot": null
+    }
+  ]
+}

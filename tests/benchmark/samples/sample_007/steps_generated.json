@@ -1,0 +1,60 @@
+{
+  "title": "Write and Run a Simple Python Script",
+  "steps": [
+    {
+      "title": "Open the Terminal",
+      "instruction": "First, open your terminal.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a Dedicated Folder",
+      "instruction": "Let's create a dedicated folder for our script. Type mkdir python demo and press enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Navigate into the Folder",
+      "instruction": "Then navigate into it with cd python demo and press enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a Python File",
+      "instruction": "Now let's create a python file. On Windows type notepad hello.py and press Enter. Notepad will ask if you want to create a new file. Click Yes. On Mac you can type nano hello.py or open it in any text editor you prefer.",
+      "screenshot": null
+    },
+    {
+      "title": "Write the Script",
+      "instruction": "Now in the text editor let's write our script. On the first line type print followed by parenthesis and inside the parenthesis type the string hello world in quotes.",
+      "screenshot": null
+    },
+    {
+      "title": "Add Variable Declaration",
+      "instruction": "On the next line, let's declare a variable. Type name equals and then your name in quotes. For example, name equals Alice.",
+      "screenshot": null
+    },
+    {
+      "title": "Add Print Statement",
+      "instruction": "On the line, I'll... that type print open parenthesis f dash string with f before the quotes then hello comma space and then curly braces with name inside then exclamation mark close quote so that the line reads printf!",
+      "screenshot": null
+    },
+    {
+      "title": "Add a Loop",
+      "instruction": "Now let's add a simple loop Type 4, I, in range, open parenthesis, 5, close parenthesis, column and press ENTER. on the next intended line type print open parenthesis f-string f iteration number curly brace i plus one close curly brace close quote close parenthesis. Make sure that line is intended with four spaces because Python uses indentation to define code blocks.",
+      "screenshot": null
+    },
+    {
+      "title": "Save the File",
+      "instruction": "Now save the file. In Notepad press Ctrl S. In Nano press Ctrl O to save and Ctrl X to exit.",
+      "screenshot": null
+    },
+    {
+      "title": "Run the Script",
+      "instruction": "Now switch back to your terminal. Make sure you are in the Python demo folder. Type python hello.py and press enter. If you are on a system where Python refers to Python 2, try Python 3.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Output",
+      "instruction": "You should see the output of your script in the terminal. The first line should say hello world, the second line should say hello Alice with whatever name you used. Then you should see iteration number 1 through iteration number 5 from the loop. If you see a syntax error or indentation error, check your script for any typos or missing indentation.",
+      "screenshot": null
+    }
+  ]
+}

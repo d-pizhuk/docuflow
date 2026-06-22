@@ -1,0 +1,54 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Create a project folder",
+      "instruction": "Open your terminal. Type mkdir python-demo and press Enter to create a dedicated folder for your script. Then navigate into it with cd python-demo and press Enter."
+    },
+    {
+      "step": 2,
+      "title": "Create the Python file",
+      "instruction": "On Windows type notepad hello.py and press Enter. Notepad will ask if you want to create a new file, click Yes. On Mac you can type nano hello.py or open it in any text editor you prefer."
+    },
+    {
+      "step": 3,
+      "title": "Write a print statement",
+      "instruction": "On the first line type print followed by parentheses and inside the parentheses type the string Hello, World! in quotes. So it should look like print open parenthesis quote Hello, World! quote close parenthesis."
+    },
+    {
+      "step": 4,
+      "title": "Declare a variable",
+      "instruction": "On the next line declare a variable. Type name equals and then your name in quotes, for example name equals Alice."
+    },
+    {
+      "step": 5,
+      "title": "Print using an f-string",
+      "instruction": "On the line after that type print open parenthesis f-string with f before the quotes, then Hello comma space and then curly braces with name inside, then exclamation mark, close quote, close parenthesis. So that line reads print f Hello name exclamation mark."
+    },
+    {
+      "step": 6,
+      "title": "Add a for loop",
+      "instruction": "Type for i in range open parenthesis 5 close parenthesis colon and press Enter. On the next indented line type print open parenthesis f-string f Iteration number curly brace i plus 1 close curly brace close quote close parenthesis. Make sure that line is indented with four spaces because Python uses indentation to define code blocks."
+    },
+    {
+      "step": 7,
+      "title": "Save the file",
+      "instruction": "In Notepad press Control S. In nano press Control O to save and Control X to exit."
+    },
+    {
+      "step": 8,
+      "title": "Run the script",
+      "instruction": "Switch back to your terminal. Make sure you are in the python-demo folder. Type python hello.py and press Enter. If you are on a system where python refers to Python 2, try python3 hello.py instead."
+    },
+    {
+      "step": 9,
+      "title": "Verify the output",
+      "instruction": "You should see the output of your script in the terminal. The first line should say Hello, World! The second line should say Hello Alice with whatever name you used. Then you should see Iteration number 1 through Iteration number 5 from the loop."
+    },
+    {
+      "step": 10,
+      "title": "Troubleshoot errors",
+      "instruction": "If you see a SyntaxError or IndentationError check your script for any typos or missing indentation. Congratulations you have just written and executed your first Python script from the command line."
+    }
+  ]
+}

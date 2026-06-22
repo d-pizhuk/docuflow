@@ -1,0 +1,55 @@
+{
+  "title": "Resolve a Merge Conflict in Git",
+  "steps": [
+    {
+      "title": "Checkout the Main Branch",
+      "instruction": "Type git checkout main and press enter to make sure we are on main.",
+      "screenshot": null
+    },
+    {
+      "title": "Merge the Feature Branch",
+      "instruction": "Type git merge feature branch and press enter. You will see a message saying conflict and that automatic merge failed.",
+      "screenshot": null
+    },
+    {
+      "title": "Identify Conflicted Files",
+      "instruction": "Type git status and press enter. You will see app.py listed under both modified and unmerged paths in red.",
+      "screenshot": null
+    },
+    {
+      "title": "Open the Conflicted File",
+      "instruction": "Open that file in your text editor.",
+      "screenshot": null
+    },
+    {
+      "title": "Edit the Conflicted File",
+      "instruction": "Inside the file you will see some special markers that git inserted to show you the conflict. Your job is to edit this section and decide what the final content should look like. You need to remove all three of those marker lines.",
+      "screenshot": null
+    },
+    {
+      "title": "Resolve the Conflict",
+      "instruction": "In this case, I'll keep both changes combined, so I'll remove the markers and keep both lines of code.",
+      "screenshot": null
+    },
+    {
+      "title": "Stage the Resolved File",
+      "instruction": "Now back in the terminal type git add app.py and press enter to mark the conflict as resolved.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Staged File",
+      "instruction": "Now type git status again and you should see the file listed under changes to be committed in green, meaning it is staged.",
+      "screenshot": null
+    },
+    {
+      "title": "Complete the Merge",
+      "instruction": "Now complete the merge by typing git commit and pressing enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Review the Merge Commit",
+      "instruction": "Type git log --oneline to see the merge commit at the top of the history.",
+      "screenshot": null
+    }
+  ]
+}

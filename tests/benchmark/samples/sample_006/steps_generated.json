@@ -1,0 +1,50 @@
+{
+  "title": "Create a Python Virtual Environment and Install Project Dependencies",
+  "steps": [
+    {
+      "title": "Open the Terminal",
+      "instruction": "Open your terminal.",
+      "screenshot": null
+    },
+    {
+      "title": "Check Python Installation",
+      "instruction": "First, make sure Python is installed by typing Python-version or Python3-version. pressing enter you should see something like python 3.11.4 or similar if you get a command not found error you need to install python first from python.org",
+      "screenshot": null
+    },
+    {
+      "title": "Navigate to Project Folder",
+      "instruction": "now navigate to your project folder. Use cd to change to the directory where your project lives. For this example, I'll type cd my project and press enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a Virtual Environment",
+      "instruction": "Now let's create the virtual environment. Type python-m-vent-vent and press enter. The mvenv part tells Python to run the built-in venv module and the last venv is the name of the folder that will be created to store the environment.",
+      "screenshot": null
+    },
+    {
+      "title": "Activate the Virtual Environment",
+      "instruction": "Now we need to activate the virtual environment. On Windows type venf scripts activate and press enter. On Mac or Linux type source venf",
+      "screenshot": null
+    },
+    {
+      "title": "Install Dependencies",
+      "instruction": "Now let's install some dependencies. For this example, I'll install the requests library. Type pip install requests and press enter. You will see pip downloading and installing the package alone with any... Once installation is complete, let's also install a second package. I'll install flask as a second example. Type pip install flask and press enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Save Dependencies to Requirements File",
+      "instruction": "Now let's save these dependencies to a requirements file so others can install them too. Type pip freeze to requirements.txt and press Enter.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify Requirements File",
+      "instruction": "This creates a file called requirements.txt in your project folder with all installed packages and their exact versions. You can verify it by typing cat requirements.txt on Mac or Linux or type requirements.txt on Windows.",
+      "screenshot": null
+    },
+    {
+      "title": "Deactivate the Virtual Environment",
+      "instruction": "To deactivate your virtual environment, environment when you are done just type deactivate and press enter the terminal prompt will go back to normal without the environment name prefix",
+      "screenshot": null
+    }
+  ]
+}

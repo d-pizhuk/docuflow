@@ -1,0 +1,49 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Open the repository main page",
+      "instruction": "Start from the repository main page on GitHub. We do not want to work directly on the main branch because that can cause problems for other collaborators."
+    },
+    {
+      "step": 2,
+      "title": "Create a new branch",
+      "instruction": "Look at the top left area of the file list. You will see a dropdown button that currently says main. Click on that branch dropdown button. A small popover appears with a search field and the list of existing branches. In the search field type the name of your new branch, for example feature-add-login. You will see that GitHub shows a suggestion that says Create branch feature-add-login from main. Click on that suggestion to create the branch."
+    },
+    {
+      "step": 3,
+      "title": "Confirm you are on the new branch",
+      "instruction": "The page refreshes and the branch dropdown now shows feature-add-login, which means we are now on that branch."
+    },
+    {
+      "step": 4,
+      "title": "Edit a file on the new branch",
+      "instruction": "Click on the README file to open it. Once the file is open, click the pencil icon in the top right of the file view to edit it. Add a new line at the bottom that says Added login feature documentation."
+    },
+    {
+      "step": 5,
+      "title": "Commit the change",
+      "instruction": "Scroll down to the Commit changes section. You will see a text field for the commit message. Type something descriptive like Add login notes to README. Make sure the option is set to Commit directly to the feature-add-login branch. Then click the green Commit changes button."
+    },
+    {
+      "step": 6,
+      "title": "Open a new pull request",
+      "instruction": "Click on the Pull requests tab at the top and then click the green New pull request button. GitHub will often show you a yellow banner at the top of the repository saying that your branch had recent pushes with a Compare and pull request button which you can also click."
+    },
+    {
+      "step": 7,
+      "title": "Set base and compare branches",
+      "instruction": "On the pull request creation page you need to set the base branch and the compare branch. The base branch is where we want to merge our changes into, which is main. The compare branch is the branch with our changes, which is feature-add-login. Make sure those are set correctly. GitHub will show you a diff of the changes below and you should see the line we added to the README highlighted in green."
+    },
+    {
+      "step": 8,
+      "title": "Fill in pull request details",
+      "instruction": "Fill in the pull request title, for example Add login feature documentation. In the description box you can add more context about what the pull request does, why you made these changes, or link to any related issues. Add a short note saying This PR adds initial documentation for the login feature."
+    },
+    {
+      "step": 9,
+      "title": "Create the pull request",
+      "instruction": "When you are ready, click the green Create pull request button. Your pull request is now open and you can see it in the Pull requests tab with the title we gave it. Other team members can now review it, leave comments, and eventually someone with write access can merge it into main."
+    }
+  ]
+}

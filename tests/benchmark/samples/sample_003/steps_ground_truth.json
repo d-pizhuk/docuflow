@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Open VS Code and the Extensions panel",
+      "instruction": "Open Visual Studio Code. Look at the left sidebar and you will see a column of icons. One of them looks like four small squares arranged in a two by two grid. That is the Extensions icon. Click on it to open the Extensions panel."
+    },
+    {
+      "step": 2,
+      "title": "Search for Prettier",
+      "instruction": "At the top of the Extensions panel there is a search box that says Search Extensions in Marketplace. Click in that search box and type Prettier. A list of results will appear."
+    },
+    {
+      "step": 3,
+      "title": "Install the Prettier extension",
+      "instruction": "Find the one called Prettier - Code formatter where the publisher says Prettier. It usually appears at the very top of the results. Click on it to open the extension detail page. On the detail page you can see a blue Install button on the right side. Go ahead and click that Install button. Once it finishes the Install button will be replaced by a small gear icon, which means the extension is installed."
+    },
+    {
+      "step": 4,
+      "title": "Open the Settings panel",
+      "instruction": "Press Control comma on Windows or Command comma on Mac to open the settings panel. Alternatively you can go to File, then Preferences, then Settings."
+    },
+    {
+      "step": 5,
+      "title": "Enable Format On Save",
+      "instruction": "In the search bar at the top of the settings type Format On Save. You will see a setting called Editor Format On Save. Check the checkbox next to it to enable it."
+    },
+    {
+      "step": 6,
+      "title": "Set the default formatter to Prettier",
+      "instruction": "Clear the search bar and type Default Formatter. You will see a setting called Editor Default Formatter. Click the dropdown for that setting and select Prettier - Code formatter from the list. The value in the dropdown should now show esbenp.prettier-vscode which is the identifier for the Prettier extension."
+    },
+    {
+      "step": 7,
+      "title": "Verify Prettier is working",
+      "instruction": "Open any JavaScript or TypeScript file in your project, or create a new one. Add some badly formatted code, for example write a function with inconsistent spacing and indentation. Now save the file with Control S on Windows or Command S on Mac. You should see the code automatically reformat itself as soon as you save."
+    },
+    {
+      "step": 8,
+      "title": "Troubleshoot if formatting does not work",
+      "instruction": "If the file does not format automatically double check that the Format On Save setting is enabled and that the Default Formatter is set to Prettier. Prettier is now installed and will format your code every time you save a file."
+    }
+  ]
+}

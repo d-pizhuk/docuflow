@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Log in to GitHub",
+      "instruction": "Make sure you are actually logged into your GitHub account. If you are not logged in, go to github.com and sign in with your credentials."
+    },
+    {
+      "step": 2,
+      "title": "Open the New Repository form",
+      "instruction": "In the top right corner of the screen you will notice a small plus icon next to your profile picture. Go ahead and click on that plus icon. A small dropdown menu appears and you will see a few options there. Click on the one that says New repository."
+    },
+    {
+      "step": 3,
+      "title": "Enter the repository name",
+      "instruction": "The first thing you need to fill in is the repository name. This should be something short, descriptive, and ideally lowercase with hyphens instead of spaces. For this example type hello-world as the name. GitHub gives you a little green checkmark if the name is available."
+    },
+    {
+      "step": 4,
+      "title": "Add a description",
+      "instruction": "Below the name field there is an optional description field. Fill this in because it helps other people and your future self understand what the project is about. Type something like My first GitHub repository for practice."
+    },
+    {
+      "step": 5,
+      "title": "Set visibility",
+      "instruction": "Below the description you will see two radio buttons for visibility. You can choose either Public, which means anyone on the internet can see your code, or Private, which means only you and people you explicitly invite can see it. For this demo leave it as Public."
+    },
+    {
+      "step": 6,
+      "title": "Initialize with a README",
+      "instruction": "Scrolling down a little bit you will see a section called Initialize this repository. There is a checkbox that says Add a README file. Check that box because it creates an initial commit and makes the repository easier to clone right away. You can also optionally add a gitignore template and choose a license, but you can skip those for now."
+    },
+    {
+      "step": 7,
+      "title": "Create the repository",
+      "instruction": "Scroll all the way down to the bottom of the page and you will see the big green button that says Create repository. Go ahead and click that button."
+    },
+    {
+      "step": 8,
+      "title": "Verify the repository",
+      "instruction": "GitHub will now create your repository and redirect you to the repository main page. You can see the repository name at the top, the README file is already there with the repository name displayed, and you have the full interface available with the Code tab, Issues, Pull requests, and so on. Your repository is now live and ready to use."
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "title": "Set Up Git Identity and Make First Commit",
+  "steps": [
+    {
+      "title": "Open a Terminal",
+      "instruction": "Open a terminal. On Windows you can use Command Prompt, PowerShell, Git Bash or the integrated terminal in VS Code. On Mac or Linux, just open your regular terminal application.",
+      "screenshot": null
+    },
+    {
+      "title": "Configure Global Username",
+      "instruction": "Configure the global username with 'git config --global user.name' and your name in double quotes. For example, 'git config --global user.name \"John Doe\"'.",
+      "screenshot": null
+    },
+    {
+      "title": "Configure Email Address",
+      "instruction": "Set the email address with 'git config --global user.email' and your email address in double quotes. For example, 'git config --global user.email \"john.doe@example.com\"'.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify Git Configuration",
+      "instruction": "Verify both settings were saved correctly with 'git config --global --list'.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a New Project Directory",
+      "instruction": "Create a new directory for your project with 'mkdir myproject'.",
+      "screenshot": null
+    },
+    {
+      "title": "Navigate to Project Directory",
+      "instruction": "Navigate into the project directory with 'cd myproject'.",
+      "screenshot": null
+    },
+    {
+      "title": "Initialize a Git Repository",
+      "instruction": "Initialize a git repository in this folder with 'git init'.",
+      "screenshot": null
+    },
+    {
+      "title": "Create a File to Commit",
+      "instruction": "Create a simple file to commit with 'echo hello world > readme.md'.",
+      "screenshot": null
+    },
+    {
+      "title": "Check Repository Status",
+      "instruction": "Check the status of the repository with 'git status'.",
+      "screenshot": null
+    },
+    {
+      "title": "Add File to Repository",
+      "instruction": "Add the file to the repository with 'git add readme.md'.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify File Added",
+      "instruction": "Verify the file was added with 'git status'.",
+      "screenshot": null
+    },
+    {
+      "title": "Make the First Commit",
+      "instruction": "Make the commit with 'git commit -m \"initial commit\"'.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify Commit History",
+      "instruction": "Verify the commit history with 'git log'.",
+      "screenshot": null
+    }
+  ]
+}

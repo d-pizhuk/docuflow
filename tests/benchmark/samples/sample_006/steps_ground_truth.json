@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Verify Python is installed",
+      "instruction": "Open your terminal. First make sure Python is installed by typing python --version or python3 --version and pressing Enter. You should see something like Python 3.11.4 or similar. If you get a command not found error you need to install Python first from python.org."
+    },
+    {
+      "step": 2,
+      "title": "Navigate to the project folder",
+      "instruction": "Use cd to change to the directory where your project lives. For this example type cd my-project and press Enter."
+    },
+    {
+      "step": 3,
+      "title": "Create the virtual environment",
+      "instruction": "Type python -m venv venv and press Enter. The -m venv part tells Python to run the built-in venv module and the last venv is the name of the folder that will be created to store the environment. You can name it anything but venv is the most common convention. When it finishes you will see a new folder called venv in your project directory."
+    },
+    {
+      "step": 4,
+      "title": "Activate the virtual environment",
+      "instruction": "On Windows type venv\\Scripts\\activate and press Enter. On Mac or Linux type source venv/bin/activate and press Enter. You will know the environment is active because your terminal prompt will change to show the name of the environment in parentheses at the beginning, like (venv) before the usual prompt."
+    },
+    {
+      "step": 5,
+      "title": "Install dependencies",
+      "instruction": "Type pip install requests and press Enter. You will see pip downloading and installing the package along with any dependencies it needs. Once installation is complete type pip install flask and press Enter to install a second package."
+    },
+    {
+      "step": 6,
+      "title": "Save dependencies to a requirements file",
+      "instruction": "Type pip freeze > requirements.txt and press Enter. This creates a file called requirements.txt in your project folder with all installed packages and their exact versions."
+    },
+    {
+      "step": 7,
+      "title": "Verify the requirements file",
+      "instruction": "Type cat requirements.txt on Mac or Linux or type requirements.txt on Windows. You should see requests and flask listed along with their dependencies and version numbers."
+    },
+    {
+      "step": 8,
+      "title": "Deactivate the virtual environment",
+      "instruction": "To deactivate your virtual environment when you are done just type deactivate and press Enter. The terminal prompt will go back to normal without the environment name prefix."
+    }
+  ]
+}

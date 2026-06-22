@@ -1,0 +1,54 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Open a terminal",
+      "instruction": "Open a terminal. On Windows you can use Command Prompt, PowerShell, Git Bash, or the integrated terminal in VS Code. On Mac or Linux just open your regular terminal application."
+    },
+    {
+      "step": 2,
+      "title": "Set the global user name",
+      "instruction": "Type git config --global user.name and then your name in double quotes, for example git config --global user.name John Doe. Press Enter to run the command. There is no output if the command succeeds which is normal for Git configuration commands."
+    },
+    {
+      "step": 3,
+      "title": "Set the global email",
+      "instruction": "Type git config --global user.email and then your email address in double quotes, for example git config --global user.email john.doe@example.com. Press Enter. Again no output means it worked."
+    },
+    {
+      "step": 4,
+      "title": "Verify the configuration",
+      "instruction": "Type git config --global --list and press Enter. This will print out all your global Git configuration values. You should see user.name equals your name and user.email equals your email address somewhere in that list."
+    },
+    {
+      "step": 5,
+      "title": "Create a new project directory",
+      "instruction": "Type mkdir my-project and press Enter to create a new directory for your project. Then navigate into it with cd my-project and press Enter."
+    },
+    {
+      "step": 6,
+      "title": "Initialize a Git repository",
+      "instruction": "Type git init and press Enter to initialize a Git repository in this folder. You should see a message saying Initialized empty Git repository."
+    },
+    {
+      "step": 7,
+      "title": "Create a file to commit",
+      "instruction": "On Windows type echo Hello World > README.md and press Enter. On Mac or Linux type echo Hello World > README.md and press Enter as well to create a simple file to commit."
+    },
+    {
+      "step": 8,
+      "title": "Stage the file",
+      "instruction": "Type git status and press Enter. You will see README.md listed as an untracked file in red. Type git add README.md and press Enter to add it to the staging area. Run git status again and now you should see README.md listed in green under Changes to be committed."
+    },
+    {
+      "step": 9,
+      "title": "Make the first commit",
+      "instruction": "Type git commit -m and then a descriptive message in quotes such as Initial commit and press Enter. Git will output some information including your name and email that it used for the commit, confirming the identity we configured earlier. You will also see the commit hash and the message."
+    },
+    {
+      "step": 10,
+      "title": "View the commit history",
+      "instruction": "Run git log to see the commit history and verify everything looks correct. Your first commit is now done."
+    }
+  ]
+}

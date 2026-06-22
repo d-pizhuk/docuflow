@@ -1,0 +1,49 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Switch to the target branch",
+      "instruction": "Type git checkout main and press Enter to make sure we are on the main branch that you want to merge into."
+    },
+    {
+      "step": 2,
+      "title": "Attempt the merge",
+      "instruction": "Type git merge feature-branch and press Enter. You will see a message saying CONFLICT and that automatic merge failed, fix conflicts and then commit the result. This is the merge conflict. Don't panic."
+    },
+    {
+      "step": 3,
+      "title": "Identify conflicted files",
+      "instruction": "Type git status and press Enter. You will see app.py listed under both modified and unmerged paths in red."
+    },
+    {
+      "step": 4,
+      "title": "Open the conflicted file",
+      "instruction": "Open that file in your text editor. Inside the file you will see some special markers that Git inserted to show you the conflict. There will be a line with seven less-than symbols followed by HEAD, which marks the beginning of the changes from your current branch which is main. Then the actual content from main. Then a line with seven equals signs which is the separator. Then the content from the feature branch. Then a line with seven greater-than symbols followed by feature-branch which marks the end of the conflict."
+    },
+    {
+      "step": 5,
+      "title": "Resolve the conflict",
+      "instruction": "Your job is to edit this section and decide what the final content should look like. You need to remove all three of those marker lines, the less-than symbols, equals signs, and greater-than symbols. Keep only the content you want, whether that is the main version, the feature version, or a combination of both."
+    },
+    {
+      "step": 6,
+      "title": "Save the file",
+      "instruction": "Save the file after removing the conflict markers and choosing the final content."
+    },
+    {
+      "step": 7,
+      "title": "Stage the resolved file",
+      "instruction": "Back in the terminal type git add app.py and press Enter to mark the conflict as resolved. If there were multiple conflicted files you would add each one after resolving them. Type git status again and you should see the file listed under Changes to be committed in green, meaning it is staged."
+    },
+    {
+      "step": 8,
+      "title": "Complete the merge",
+      "instruction": "Type git commit and press Enter. Git will open a default commit message in your editor saying Merge branch feature-branch. You can keep this message or modify it. Save and close the editor. The merge is now complete."
+    },
+    {
+      "step": 9,
+      "title": "Verify the merge",
+      "instruction": "Type git log --oneline to see the merge commit at the top of the history. The key steps are: identify the conflicted files, edit them to remove the markers and choose the final content, stage the resolved files, and commit."
+    }
+  ]
+}

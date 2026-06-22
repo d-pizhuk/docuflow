@@ -1,0 +1,60 @@
+{
+  "title": "Install and Configure Prettier Code Formatter in Visual Studio Code",
+  "steps": [
+    {
+      "title": "Open Visual Studio Code",
+      "instruction": "The first thing to do is open Visual Studio Code.",
+      "screenshot": null
+    },
+    {
+      "title": "Open the Extensions Panel",
+      "instruction": "Once it's open, look at the left sidebar. You will see a column of icons and one of them looks like four small squares arranged in a 2x2 grid. There is the extensions icon. Click on it.",
+      "screenshot": null
+    },
+    {
+      "title": "Search for Prettier Extension",
+      "instruction": "The extensions panel opens on the left side. At the top there is a search box that says search extensions in marketplace. Click in that search box and type Prettier.",
+      "screenshot": null
+    },
+    {
+      "title": "Select Prettier Code Formatter Extension",
+      "instruction": "A list of results will appear. You want to find one called Prettier Code Formatter, and the publisher should say Prettier. It usually appears at the very top of the results. Click on it to open the extension detail page.",
+      "screenshot": null
+    },
+    {
+      "title": "Install Prettier Code Formatter Extension",
+      "instruction": "On the detail page you can see the description, a change log and a blue install button on the right side. Go ahead and click that Install button.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify Extension Installation",
+      "instruction": "Installation only takes a few seconds. Once it finishes, the Install button will be replaced by a small GR icon, which means the extension is installed.",
+      "screenshot": null
+    },
+    {
+      "title": "Open Settings Panel",
+      "instruction": "Now we need to configure VS code to use Pretia as the default formatter and to format files automatically when we save. To do this, we need to open the settings. Press Ctrl, on Windows or Command, on Mac to open the settings panel.",
+      "screenshot": null
+    },
+    {
+      "title": "Enable Format on Save",
+      "instruction": "The Settings panel opens. In the search bar at the top of the settings type Format on Save. You will see a setting called Editor Format on Save. Check the checkbox next to it to enable it.",
+      "screenshot": null
+    },
+    {
+      "title": "Set Default Formatter",
+      "instruction": "Now clear the search bar and type Default Formatter. You will see a setting called Editor Default Formatter. Click the drop-down for that setting and type or select Prettier code formatter from the list.",
+      "screenshot": null
+    },
+    {
+      "title": "Verify Prettier Configuration",
+      "instruction": "The value in the drop-down should now show ESBENT Pretia VS Code, which is the identifier for the Pretia extension. Now let's verify it works. Open any JavaScript or TypeScript file in your project. or create a new one. Add some badly formatted code, for example write a function with inconsistent spacing and indentation. Now save the file with Ctrl S on Windows or Cmd S on Mac. the code automatically reformat itself as soon as you save.",
+      "screenshot": null
+    },
+    {
+      "title": "Confirm Prettier Formatting",
+      "instruction": "The indentation will be consistent, quotes will be normalized, and trailing commas will be added or removed according to Prettier's rule. If it doesn't format automatically, double check that the format on save setting is enabled and that the default formatter is set to prettier.",
+      "screenshot": null
+    }
+  ]
+}

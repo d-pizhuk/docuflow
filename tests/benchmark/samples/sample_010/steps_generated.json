@@ -1,0 +1,70 @@
+{
+  "title": "Write a Dockerfile, Build a Docker Image, and Run a Docker Container",
+  "steps": [
+    {
+      "title": "Create a Dockerfile",
+      "instruction": "The first thing we need to do is create a docker file in the project route. Open your text editor and create a new file called docker file. with a capital D and no file extension",
+      "screenshot": null
+    },
+    {
+      "title": "Specify the Base Image",
+      "instruction": "The first instruction in a docker file is always FROM which specifies the base image. on the first line. This tells Docker to use the official Python 3.11 slim image as the starting point.",
+      "screenshot": null
+    },
+    {
+      "title": "Set the Working Directory",
+      "instruction": "On the next line type workdir This sets the working directory inside the container to slash app. All subsequent commands will run from this directory.",
+      "screenshot": null
+    },
+    {
+      "title": "Copy Requirements File",
+      "instruction": "Now type copy requirements.txt with a dot at the end. The dot means copy into the current working directory, which is slash app.",
+      "screenshot": null
+    },
+    {
+      "title": "Install Dependencies",
+      "instruction": "On the next line run pip install no cache dir requirements txt This installs the Python dependencies inside the container.",
+      "screenshot": null
+    },
+    {
+      "title": "Copy Application Code",
+      "instruction": "Now type copy dot dot to copy the rest of the application code into the container.",
+      "screenshot": null
+    },
+    {
+      "title": "Expose Port",
+      "instruction": "Then type expose5000 to tell Docker that the container listens on port 5000.",
+      "screenshot": null
+    },
+    {
+      "title": "Specify Command to Start Application",
+      "instruction": "Finally type cmd with square brackets, then the command to start the application. So cmd open square bracket quote python quote comma quote app dot pi quote close square bracket",
+      "screenshot": null
+    },
+    {
+      "title": "Save the Dockerfile",
+      "instruction": "Save the Docker file.",
+      "screenshot": null
+    },
+    {
+      "title": "Build the Docker Image",
+      "instruction": "Now open your terminal and navigate to the project folder. Type docker build my flask app dot and press enter",
+      "screenshot": null
+    },
+    {
+      "title": "Run the Docker Container",
+      "instruction": "Type docker run dash p 5000 5000 my flask app and press enter. the \"-P50005000 flag maps port 5000 on your host machine to port 5000 inside the container",
+      "screenshot": null
+    },
+    {
+      "title": "Verify the Application",
+      "instruction": "Open your browser and go to HTTP localhost 5000 You should see the message Hello from Docker in your browser.",
+      "screenshot": null
+    },
+    {
+      "title": "Stop the Container",
+      "instruction": "To stop the container press Ctrl-C in the terminal.",
+      "screenshot": null
+    }
+  ]
+}
