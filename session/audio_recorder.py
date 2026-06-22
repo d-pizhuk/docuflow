@@ -11,26 +11,19 @@ from PySide6.QtCore import QThread, Signal
 
 class AudioRecorderThread(QThread):
     audio_level = Signal(float)
-    chunk_ready = Signal(str, float)  # (path to flushed WAV chunk, start_offset secs)
-    recording_saved = Signal(str)  # path to the final full WAV
+    chunk_ready = Signal(str, float)
+    recording_saved = Signal(str)
     error_occurred = Signal(str)
 
-    SAMPLE_RATE = 16_000
+    SAMPLE_RATE = 16000
     CHANNELS = 1
-    BLOCK_SIZE = 1_024  # ~64 ms at 16 kHz
+    BLOCK_SIZE = 1024
     DTYPE = "float32"
 
-    # VAD / chunking config
-    SILENCE_THRESHOLD = 0.01  # RMS below this = silence
-    SILENCE_MIN_BLOCKS = 8  # ~0.5 s of silence before a cut is allowed
-    # Chunk sizing is chosen to BOUND THE POST-STOP TAIL. The only audio left to
-    # transcribe at Stop is the in-progress chunk, so its hard cap is the worst
-    # case the user waits on. ~15 s cap → a few seconds of transcription on any
-    # reasonable CPU (turbo/int8 runs several × real-time). Silence cuts most
-    # chunks earlier. Live transcription has ample headroom to keep up, so no
-    # backlog forms and Stop only pays for this last short chunk.
-    CHUNK_MIN_BLOCKS = 125  # ~8 s minimum before looking for a silence cut
-    CHUNK_MAX_BLOCKS = 235  # ~15 s hard cap (bounds the post-Stop tail)
+    SILENCE_THRESHOLD = 0.01
+    SILENCE_MIN_BLOCKS = 8
+    CHUNK_MIN_BLOCKS = 125
+    CHUNK_MAX_BLOCKS = 235
 
     def __init__(self, device_index: int, output_dir: Path, parent=None):
         super().__init__(parent)
@@ -44,9 +37,8 @@ class AudioRecorderThread(QThread):
         self._block_count = 0
         self._chunk_index = 0
         self._t0 = 0.0
-        self._elapsed_audio = 0.0  # cumulative seconds of audio cut so far
+        self._elapsed_audio = 0.0
 
-        # Keep track of chunk paths to merge them at the end
         self._chunk_paths: list[Path] = []
 
     def run(self):
@@ -96,26 +88,19 @@ class AudioRecorderThread(QThread):
             if self._current_chunk:
                 self._flush_chunk("final")
 
-        # Merge all chunks into a single full_session.wav file
         full_audio_path = self._output_dir / "full_audio.wav"
         self._write_full_wav(full_audio_path, self._chunk_paths)
 
-        # Emit the path to the final full WAV file
         self.recording_saved.emit(str(full_audio_path))
 
     def stop_recording(self):
         self._stop_event.set()
 
-    # called with self._lock held
     def _flush_chunk(self, reason: str = "final"):
         data = np.concatenate(self._current_chunk)
         dur = len(data) / self.SAMPLE_RATE
         elapsed = time.monotonic() - self._t0
 
-        # Each chunk's position in the recording timeline is the audio cut
-        # before it. Assigned here (chunks are strictly ordered) so transcription
-        # can run on multiple workers and finish out of order without scrambling
-        # the timeline.
         start_offset = self._elapsed_audio
         self._elapsed_audio += dur
 
@@ -129,7 +114,6 @@ class AudioRecorderThread(QThread):
         self._chunk_index += 1
         self._write_wav(path, data)
 
-        # Save path for later merging
         self._chunk_paths.append(path)
 
         print(
@@ -151,21 +135,17 @@ class AudioRecorderThread(QThread):
 
     @staticmethod
     def _write_full_wav(out_path: Path, chunk_paths: list[Path]):
-        """Concatenates multiple WAV chunk files into a single WAV file."""
         if not chunk_paths:
             return
 
         print(f"[recorder] merging {len(chunk_paths)} chunks into {out_path.name}...", flush=True)
 
         with wave.open(str(out_path), "wb") as out_wf:
-            # Copy WAV params from the first chunk
             with wave.open(str(chunk_paths[0]), "rb") as first_wf:
                 out_wf.setnchannels(first_wf.getnchannels())
                 out_wf.setsampwidth(first_wf.getsampwidth())
                 out_wf.setframerate(first_wf.getframerate())
 
-            # Stream the audio frames from each chunk into the final file
-            # This avoids loading the entire session audio into memory
             for path in chunk_paths:
                 with wave.open(str(path), "rb") as wf:
                     out_wf.writeframes(wf.readframes(wf.getnframes()))

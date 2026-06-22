@@ -1,4 +1,3 @@
-# ai/screenshot_describer.py
 import base64
 import json
 import logging
@@ -87,7 +86,6 @@ class ScreenshotDescriber:
             ]},
         ]
 
-        last_raw = ""
         for attempt in range(MAX_JSON_REPAIR_ATTEMPTS + 1):
             msg = self._gateway.chat(
                 model=self._model,

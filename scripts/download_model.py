@@ -1,10 +1,8 @@
 from pathlib import Path
 from huggingface_hub import snapshot_download
 
-# Pre-converted CTranslate2 model — contains model.bin, no conversion needed.
-# This IS large-v3-turbo (full large-v3 encoder + a fast 4-layer turbo decoder).
 MODEL_REPO = "deepdml/faster-whisper-large-v3-turbo-ct2"
-MODEL_DIR  = Path(__file__).resolve().parent.parent / "models" / "whisper-large-v3-turbo"
+MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "whisper-large-v3-turbo"
 
 
 def main():

@@ -1,4 +1,3 @@
-# ai/api_gateway.py
 import logging
 import time
 from dataclasses import dataclass
@@ -14,12 +13,8 @@ from openai import (
 
 logger = logging.getLogger(__name__)
 
-# Per-request wall-clock budget. NfReq2 allows 90 s end to end for 10 steps
-# (LLM + later VLM); the structuring call takes the larger share.
 REQUEST_TIMEOUT_S = 60.0
 
-# Transport-level retries for transient failures (network blip, 5xx, 429),
-# per design Q4: "retries up to 3 times with exponential backoff".
 MAX_RETRIES = 3
 BACKOFF_BASE_S = 1.5
 
@@ -31,7 +26,6 @@ class ApiGatewayError(RuntimeError):
 @dataclass
 class ApiGateway:
     """Thin wrapper around the OpenAI client that owns retry/backoff/timeout."""
-
     base_url: str
     api_key: str
     timeout_s: float = REQUEST_TIMEOUT_S

@@ -1,4 +1,3 @@
-# ai/step_structurer.py
 import json
 import logging
 from dataclasses import dataclass, field

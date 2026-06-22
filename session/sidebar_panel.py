@@ -1,4 +1,3 @@
-# session/sidebar_panel.py
 import json
 import sys
 import time
@@ -138,9 +137,6 @@ class GenerationProgressDialog(QDialog):
         super().closeEvent(event)
 
 
-# ---------------------------------------------------------------------------
-# Transcript length guard constant (Design Q7)
-# ---------------------------------------------------------------------------
 _MAX_TRANSCRIPT_WORDS = 4000
 
 
@@ -411,9 +407,6 @@ class SidebarPanel(QWidget):
     def _start_generation(self, annotated: str, steps: list[AnnotatedStep], full_text: str):
         from PySide6.QtCore import QThreadPool, QRunnable
 
-        # ── Design Q7: Long-transcript guard ──────────────────────────────
-        # If the transcript exceeds the safe word limit, warn the user and
-        # let them choose whether to proceed or split into shorter sessions.
         word_count = len(annotated.split())
         if word_count > _MAX_TRANSCRIPT_WORDS:
             reply = QMessageBox.warning(
@@ -428,10 +421,8 @@ class SidebarPanel(QWidget):
                 QMessageBox.StandardButton.No,
             )
             if reply != QMessageBox.StandardButton.Yes:
-                # Skip AI generation — show review window with transcript only
                 self._show_results(annotated, merged=None, error=None)
                 return
-        # ──────────────────────────────────────────────────────────────────
 
         self._progress_dlg = GenerationProgressDialog(self)
         self._progress_dlg.show()

@@ -1,4 +1,3 @@
-# main.py
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
@@ -23,7 +22,6 @@ def setup_logging():
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(handler)
 
-    # Also log to console for development visibility
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)

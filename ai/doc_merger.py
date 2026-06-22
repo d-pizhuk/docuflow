@@ -35,10 +35,6 @@ class MergedDoc:
 
 
 class DocMerger:
-    """Req8: deterministic merge of the LLM's structured steps (Req6) with the
-    VLM's per-screenshot descriptions (Req7) into one final documentation object.
-    No AI here — purely combines existing fields."""
-
     @staticmethod
     def merge(doc: StructuredDoc,
               descriptions: dict[str, ScreenshotDescription]) -> MergedDoc:

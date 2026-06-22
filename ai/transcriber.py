@@ -1,4 +1,3 @@
-# ai/transcriber.py
 import logging
 import os
 import queue

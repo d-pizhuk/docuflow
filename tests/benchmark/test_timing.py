@@ -1,10 +1,3 @@
-# tests/benchmark/test_timing.py
-"""
-Automated timing tests for NfReq1 and NfReq2.
-
-NfReq1: 5 min audio transcribed within 120 seconds *after* hitting Stop.
-NfReq2: 10 steps (JSON + Vision) processed within 90 seconds.
-"""
 import sys
 import time
 import wave
@@ -13,7 +6,6 @@ import tempfile
 import pytest
 from pathlib import Path
 
-# Ensure root directory is in path to import app modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from settings import Settings
@@ -27,7 +19,6 @@ SAMPLES_DIR = Path(__file__).resolve().parent / "samples"
 
 @pytest.fixture(scope="module")
 def transcriber():
-    """Load Whisper model once for all tests using settings."""
     settings = Settings.load()
     whisper_lang = WHISPER_LANGUAGE_CODES.get(settings.documentation_language, "en")
     t = Transcriber(on_chunk_transcribed=lambda _: None, language=whisper_lang)
@@ -36,7 +27,6 @@ def transcriber():
 
 
 def test_nf_req1_transcription_speed(transcriber):
-    """NfReq1: Post-stop transcription <= 120s for an up to 5-min recording."""
     samples = [d for d in SAMPLES_DIR.iterdir() if d.is_dir()]
     longest_duration = 0
     longest_wav = None
@@ -95,7 +85,6 @@ def test_nf_req1_transcription_speed(transcriber):
 
 
 def test_nf_req2_generation_speed():
-    """NfReq2: 10 steps processed <= 90s. Uses longest step count transcript."""
     samples = [d for d in SAMPLES_DIR.iterdir() if d.is_dir()]
     max_steps = 0
     target_sample = None

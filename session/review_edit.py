@@ -172,7 +172,6 @@ class ReviewEditWindow(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Review & Edit Documentation")
         self.resize(1000, 720)
-        # Allow minimizing and closing
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
         self.setStyleSheet(_DIALOG_STYLE)
 
@@ -185,7 +184,7 @@ class ReviewEditWindow(QDialog):
 
         if error:
             banner = QLabel(
-                f"⚠ AI generation failed: {error}\nYour transcript is shown on the right and saved in the session folder.")
+                f"AI generation failed: {error}\nYour transcript is shown on the right and saved in the session folder.")
             banner.setWordWrap(True)
             banner.setStyleSheet(
                 "background:#fdecea; color:#922b21; border-radius:6px; padding:12px; border: 1px solid #f5c6cb;")

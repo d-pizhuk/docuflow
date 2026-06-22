@@ -1,16 +1,13 @@
-# scripts/generate_benchmark_steps.py
-
 import argparse
 import json
 import sys
 from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
 from settings import Settings
 from ai.step_structurer import StepStructurer
 from ai.api_gateway import ApiGateway, ApiGatewayError
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 SAMPLES_DIR = PROJECT_ROOT / "tests" / "benchmark" / "samples"
 

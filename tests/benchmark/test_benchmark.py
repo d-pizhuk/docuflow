@@ -1,18 +1,3 @@
-"""
-Benchmark evaluation suite for DocuFlow.
-
-Metrics
--------
-- WER   : Word Error Rate on Whisper transcription vs ground-truth transcript
-- ROUGE-L : F1 on generated steps (flattened) vs ground-truth steps (flattened)
-
-Sample layout expected under tests/benchmark/samples/<sample_id>/
-    transcript_ground_truth.txt   – reference spoken text
-    transcript_whisper.txt        – Whisper output to evaluate
-    steps_ground_truth.json       – {"steps": [{"step":int,"title":str,"instruction":str}, ...]}
-    steps_generated.json          – {"title":str, "steps": [{"title":str,"instruction":str,...}, ...]}
-"""
-
 from __future__ import annotations
 
 import json
@@ -23,15 +8,9 @@ from pathlib import Path
 from rouge_score import rouge_scorer
 import jiwer
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "benchmark" / "samples"
 
 
-# ---------------------------------------------------------------------------
-# Data model
-# ---------------------------------------------------------------------------
 @dataclass
 class BenchmarkSample:
     sample_id: str
@@ -63,9 +42,6 @@ class BenchmarkSample:
         return " ".join(f"{s.get('title', '')} {s['instruction']}" for s in self.steps_generated)
 
 
-# ---------------------------------------------------------------------------
-# Metrics
-# ---------------------------------------------------------------------------
 _SCORER = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
 
 _WER_TRANSFORM = jiwer.Compose([
@@ -93,9 +69,6 @@ def compute_wer(reference: str, hypothesis: str) -> float:
     )
 
 
-# ---------------------------------------------------------------------------
-# Discovery
-# ---------------------------------------------------------------------------
 def discover_samples() -> list[BenchmarkSample]:
     if not SAMPLES_DIR.exists():
         return []
@@ -103,9 +76,6 @@ def discover_samples() -> list[BenchmarkSample]:
     return [BenchmarkSample.load(d) for d in dirs]
 
 
-# ---------------------------------------------------------------------------
-# Rating Buckets
-# ---------------------------------------------------------------------------
 def get_acc_rating(acc: float) -> str:
     if acc >= 0.95: return "PERFECT"
     if acc >= 0.85: return "GOOD"
@@ -120,9 +90,6 @@ def get_rouge_rating(rouge: float) -> str:
     return "BAD"
 
 
-# ---------------------------------------------------------------------------
-# Main Execution
-# ---------------------------------------------------------------------------
 def main():
     samples = discover_samples()
     if not samples:
@@ -145,7 +112,6 @@ def main():
             "rouge_rating": get_rouge_rating(rouge_l)
         })
 
-    # Print Table 1: Transcription Accuracy
     print("\n" + "=" * 65)
     print(" TABLE 1: Transcription Accuracy (WER)")
     print("=" * 65)
@@ -155,13 +121,11 @@ def main():
         print(f"{r['sample_id']:<20} {r['acc']:>10.3f} {r['wer']:>10.3f} {r['acc_rating']:>15}")
     print("-" * 65)
 
-    # Calculate Averages
     avg_acc = sum(r['acc'] for r in results) / len(results)
     avg_wer = sum(r['wer'] for r in results) / len(results)
     print(f"{'AVERAGE':<20} {avg_acc:>10.3f} {avg_wer:>10.3f}")
     print("=" * 65)
 
-    # Print Table 2: Documentation Quality (ROUGE-L)
     print("\n" + "=" * 65)
     print(" TABLE 2: Documentation Quality (ROUGE-L)")
     print("=" * 65)

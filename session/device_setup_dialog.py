@@ -1,4 +1,3 @@
-# session/device_setup_dialog.py
 import threading
 
 import numpy as np
@@ -12,6 +11,7 @@ from PySide6.QtWidgets import (
 
 from ai.languages import DOCUMENTATION_LANGUAGES, WHISPER_LANGUAGE_CODES
 
+
 class _ModelReadyEvent(QEvent):
     _TYPE = QEvent.Type(QEvent.registerEventType())
 
@@ -19,6 +19,7 @@ class _ModelReadyEvent(QEvent):
         super().__init__(self._TYPE)
         self.success = success
         self.error = error
+
 
 class DeviceSetupDialog(QDialog):
     def __init__(self, settings, parent=None):
@@ -280,16 +281,19 @@ class DeviceSetupDialog(QDialog):
         self._stop_test()
         super().closeEvent(event)
 
+
 def _hsep() -> QFrame:
     sep = QFrame()
     sep.setFrameShape(QFrame.Shape.HLine)
     sep.setFrameShadow(QFrame.Shadow.Sunken)
     return sep
 
+
 def _bold_label(text: str) -> QLabel:
     lbl = QLabel(text)
     lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
     return lbl
+
 
 _MIC_BAR_STYLE = """
     QProgressBar { border: 1px solid #ccc; border-radius: 6px; background: #f0f0f0; }

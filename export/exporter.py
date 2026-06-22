@@ -16,8 +16,7 @@ _HTML_MAX_IMG_WIDTH = 1400
 
 
 class ExportError(RuntimeError):
-    """Raised when an export fails. The caller keeps the editor open and shows
-    the message (Req10: graceful error, preview stays intact)."""
+    """Raised when an export fails."""
 
 
 _CSS = """
@@ -34,12 +33,7 @@ p { margin: 0 0 12px 0; line-height: 1.5; }
 """.strip()
 
 
-# --------------------------------------------------------------------------- #
-# Public API
-# --------------------------------------------------------------------------- #
-
 def to_html(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
-    """Write a single self-contained HTML file (images embedded as data URIs)."""
     try:
         markup = _build_html(doc, Path(image_dir), embed=True)
         Path(out_path).write_text(markup, encoding="utf-8")
@@ -49,7 +43,6 @@ def to_html(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
 
 
 def to_pdf(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
-    """Render the documentation to a PDF using xhtml2pdf (pure Python, no system deps)."""
     markup = _build_html(doc, Path(image_dir), embed=True)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -68,25 +61,15 @@ def to_pdf(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
 
 
 def to_markdown(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
-    """Write a Markdown file converted from the HTML representation via markdownify.
-
-    This ensures 100% consistency with the HTML output and avoids duplicating
-    document generation logic (DRY principle).
-    """
     try:
         markup = _build_html(doc, Path(image_dir), embed=False)
 
-        # Extract only the <body> to avoid converting <head> (title, style, meta)
-        # which would leak into the Markdown output.
         soup = BeautifulSoup(markup, "html.parser")
         body = soup.find("body")
         html_body = str(body) if body else markup
 
-        # Convert HTML to Markdown using ATX headers (# style) which is the
-        # modern standard for GitHub Flavored Markdown.
         content = markdownify.markdownify(html_body, heading_style="ATX", bullets="-")
 
-        # Clean up excessive blank lines that HTML -> MD conversion can introduce
         content = re.sub(r'\n{3,}', '\n\n', content).strip()
 
         out_path = Path(out_path)
@@ -96,10 +79,6 @@ def to_markdown(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
     except OSError as exc:
         raise ExportError(f"Could not write Markdown file: {exc}") from exc
 
-
-# --------------------------------------------------------------------------- #
-# HTML construction (shared by HTML, PDF, and Markdown exporters)
-# --------------------------------------------------------------------------- #
 
 def _build_html(doc: MergedDoc, image_dir: Path, *, embed: bool) -> str:
     parts: list[str] = [
