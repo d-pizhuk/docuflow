@@ -11,8 +11,8 @@ class Settings:
 
     llm_model: str = "casperhansen/llama-3.3-70b-instruct-awq"
     vlm_model: str = "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
-    api_base_url: str = "https://vllm-api.scch.at/v1/"
-    api_key: str = "EMPTY"
+    api_base_url: str = ""
+    api_key: str = ""
 
     @classmethod
     def load(cls) -> "Settings":
