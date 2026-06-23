@@ -30,7 +30,22 @@ p { margin: 0 0 12px 0; line-height: 1.5; }
 .img-wrap img { max-width: 100%; border: 1px solid #ddd; display: block; margin: 0 auto; }
 .img-caption { text-align: center; font-size: 13px; color: #555;
                line-height: 1.3; margin: 4px 0 16px 0; padding: 0; }
+code { background: #f0f2f5; padding: 1px 5px; border-radius: 4px;
+       font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+       font-size: 0.92em; color: #1a1a1a; }
 """.strip()
+
+
+_CODE_SPAN_RE = re.compile(r"`([^`]+)`")
+
+
+def _esc(s: str | None) -> str:
+    return html.escape(s or "")
+
+
+def _esc_rich(s: str | None) -> str:
+    escaped = html.escape(s or "")
+    return _CODE_SPAN_RE.sub(r"<code>\1</code>", escaped)
 
 
 def to_html(doc: MergedDoc, image_dir: Path, out_path: Path) -> Path:
@@ -94,7 +109,7 @@ def _build_html(doc: MergedDoc, image_dir: Path, *, embed: bool) -> str:
         parts.append("<section class='step'>")
         parts.append(f"<h2>{i}. {_esc(step.title)}</h2>")
         if step.instruction:
-            parts.append(f"<p>{_esc(step.instruction)}</p>")
+            parts.append(f"<p>{_esc_rich(step.instruction)}</p>")
 
         if step.screenshot:
             src = (
@@ -157,7 +172,3 @@ def _image_data_uri(path: Path) -> str | None:
 
     b64 = base64.b64encode(raw).decode("ascii")
     return f"data:{media};base64,{b64}"
-
-
-def _esc(s: str | None) -> str:
-    return html.escape(s or "")
